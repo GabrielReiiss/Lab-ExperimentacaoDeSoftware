@@ -1,6 +1,4 @@
-"""
-Testa extract_rq06() com dados fixos, sem bater na API de verdade.
-"""
+"""Testes de extract_rq06, sem chamar a API."""
 from src.metrics.rq06 import extract_rq06
 
 

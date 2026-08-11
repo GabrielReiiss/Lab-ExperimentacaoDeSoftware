@@ -1,6 +1,4 @@
-"""
-Testa extract_rq01() com datas fixas, sem bater na API de verdade.
-"""
+"""Testes de extract_rq01, sem chamar a API."""
 from datetime import datetime, timezone
 
 from src.metrics.rq01 import extract_rq01
