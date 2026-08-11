@@ -1,9 +1,6 @@
 """
-Query GraphQL da RQ02 (contribuição externa).
-
-Busca repositórios ordenados por estrelas e traz, para cada um, o total
-de pull requests com estado MERGED — é esse número que a métrica usa como
-proxy de contribuição externa aceita pelo projeto.
+Query da RQ02. Traz o total de pull requests com status MERGED de cada
+repositório.
 """
 
 RQ02_QUERY = """

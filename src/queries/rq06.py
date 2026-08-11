@@ -1,10 +1,6 @@
 """
-Query GraphQL da RQ06 (percentual de issues fechadas).
-
-Busca repositórios ordenados por estrelas e traz, para cada um, o total
-de issues fechadas (`closedIssues`) e o total geral de issues
-(`totalIssues`, sem filtro de estado) — usados para calcular a razão
-issues fechadas / total de issues.
+Query da RQ06. Traz o total de issues fechadas e o total geral de
+issues de cada repositório (dois alias sobre o campo issues).
 """
 
 RQ06_QUERY = """

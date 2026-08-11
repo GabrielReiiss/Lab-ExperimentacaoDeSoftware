@@ -1,11 +1,6 @@
 """
-Validação manual da RQ02 (Lab01S01).
-
-Roda a query em uma amostra pequena de repositórios populares, extrai a
-métrica e imprime o resultado para conferência visual antes de integrar
-ao script único de consulta do grupo.
-
-Uso: python -m scripts.validate_rq02
+Testa a RQ02 numa amostra de 10 repositórios antes de integrar ao
+script único do grupo.
 """
 from src.github_client.client import run_query
 from src.metrics.rq02 import extract_rq02

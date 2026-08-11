@@ -1,9 +1,6 @@
 """
-Query GraphQL da RQ01 (idade do repositório).
-
-Busca repositórios ordenados por estrelas e traz, para cada um, o campo
-`createdAt`: data de criação do repositório — é essa data que a métrica
-usa para calcular a idade/maturidade.
+Query da RQ01. Traz o campo createdAt de cada repositório, usado para
+calcular a idade.
 """
 
 RQ01_QUERY = """
