@@ -1,6 +1,11 @@
 """
-Testa a RQ01 numa amostra de 10 repositórios antes de integrar ao
-script único do grupo.
+Validação manual da RQ01 (Lab01S01).
+
+Roda a query em uma amostra pequena de repositórios populares, extrai a
+métrica e imprime o resultado para conferência visual antes de integrar
+ao script único de consulta do grupo.
+
+Uso: python -m scripts.validate_rq01
 """
 from src.github_client.client import run_query
 from src.metrics.rq01 import extract_rq01
