@@ -7,7 +7,7 @@ repositório e hoje. Quanto menor o número, mais recente a atualização.
 from datetime import datetime, timezone
 
 
-def extract_rq04(repo: dict, now: datetime = None) -> int:
+def extract_update_frequency(repo: dict, now: datetime = None) -> int:
     """
     Recebe um node de repositório (precisa ter o campo `pushedAt`, no
     formato ISO 8601 retornado pela API) e devolve o número de dias desde

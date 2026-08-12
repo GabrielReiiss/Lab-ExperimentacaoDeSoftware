@@ -4,7 +4,7 @@ repositório.
 """
 
 
-def extract_rq06(repo: dict) -> float | None:
+def extract_closed_issues_ratio(repo: dict) -> float | None:
     """Retorna None quando o repositório não tem nenhuma issue."""
     total = repo["totalIssues"]["totalCount"]
     closed = repo["closedIssues"]["totalCount"]

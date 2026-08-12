@@ -5,25 +5,25 @@ Roda a query em uma amostra pequena de repositórios populares, extrai a
 métrica e imprime o resultado para conferência visual antes de integrar
 ao script único de consulta do grupo.
 
-Uso: python -m scripts.validate_rq06
+Uso: python -m scripts.validate_closed_issues_ratio
 """
 from src.github_client.client import run_query
-from src.metrics.rq06 import extract_rq06
-from src.queries.rq06 import RQ06_QUERY, RQ06_SEARCH_QUERY
+from src.metrics.closed_issues_ratio import extract_closed_issues_ratio
+from src.queries.closed_issues_ratio import CLOSED_ISSUES_RATIO_QUERY, CLOSED_ISSUES_RATIO_SEARCH_QUERY
 
 SAMPLE_SIZE = 10
 
 
 def main():
     data = run_query(
-        RQ06_QUERY,
-        {"searchQuery": RQ06_SEARCH_QUERY, "first": SAMPLE_SIZE, "cursor": None},
+        CLOSED_ISSUES_RATIO_QUERY,
+        {"searchQuery": CLOSED_ISSUES_RATIO_SEARCH_QUERY, "first": SAMPLE_SIZE, "cursor": None},
     )
     repos = data["search"]["nodes"]
 
     print(f"{'Repositório':<40} {'Fechadas/Total':<16} {'% Fechadas':>10}")
     for repo in repos:
-        razao = extract_rq06(repo)
+        razao = extract_closed_issues_ratio(repo)
         nome = f"{repo['owner']['login']}/{repo['name']}"
         fechadas = repo["closedIssues"]["totalCount"]
         total = repo["totalIssues"]["totalCount"]

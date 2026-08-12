@@ -5,7 +5,7 @@ Métrica: linguagem primária de cada repositório (campo `primaryLanguage`
 retornado pela API GraphQL do GitHub).
 """
 
-def extract_rq05(repo: dict) -> str | None:
+def extract_primary_language(repo: dict) -> str | None:
     """
     Recebe um node de repositório e devolve o
     nome da linguagem primária, ou None se não houver.
