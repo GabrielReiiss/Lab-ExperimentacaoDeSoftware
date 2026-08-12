@@ -4,5 +4,5 @@ aproximação de contribuição externa.
 """
 
 
-def extract_rq02(repo: dict) -> int:
+def extract_external_contribution(repo: dict) -> int:
     return repo["pullRequests"]["totalCount"]

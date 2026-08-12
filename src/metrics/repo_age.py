@@ -5,7 +5,7 @@ createdAt.
 from datetime import datetime, timezone
 
 
-def extract_rq01(repo: dict, now: datetime = None) -> int:
+def extract_repo_age(repo: dict, now: datetime = None) -> int:
     """Dias entre a criação do repositório e now (UTC por padrão)."""
     if now is None:
         now = datetime.now(timezone.utc)

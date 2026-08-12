@@ -1,10 +1,9 @@
 """
-Query GraphQL da RQ05 (linguagem primária do repositório).
-
-Busca repositórios ordenados por estrelas e traz, para cada um, o campo `primaryLanguage`.
+Query da RQ02. Traz o total de pull requests com status MERGED de cada
+repositório.
 """
 
-RQ05_QUERY = """
+EXTERNAL_CONTRIBUTION_QUERY = """
 query($searchQuery: String!, $first: Int!, $cursor: String) {
   search(query: $searchQuery, type: REPOSITORY, first: $first, after: $cursor) {
     pageInfo { hasNextPage endCursor }
@@ -12,11 +11,13 @@ query($searchQuery: String!, $first: Int!, $cursor: String) {
       ... on Repository {
         name
         owner { login }
-        primaryLanguage { name }
+        pullRequests(states: MERGED) {
+          totalCount
+        }
       }
     }
   }
 }
 """
 
-RQ05_SEARCH_QUERY = "stars:>1 sort:stars-desc"
+EXTERNAL_CONTRIBUTION_SEARCH_QUERY = "stars:>1 sort:stars-desc"
