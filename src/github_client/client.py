@@ -16,6 +16,10 @@ RETRY_DELAY_SECONDS = 2  # espera entre tentativas, dobra a cada retry (backoff)
 # Erros do lado do servidor do GitHub.
 RETRYABLE_STATUS_CODES = {502, 503, 504}
 
+# Sessão HTTP reaproveitada entre todas as chamadas.
+_session = requests.Session()
+_session.headers.update({"Authorization": f"Bearer {GITHUB_TOKEN}"})
+
 def run_query(query: str, variables: dict = None) -> dict:
     """
     Envia uma query/mutation GraphQL para a API do GitHub.
@@ -33,11 +37,7 @@ def run_query(query: str, variables: dict = None) -> dict:
     last_error = None
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        response = requests.post(
-            GITHUB_GRAPHQL_URL,
-            json=body,
-            headers={"Authorization": f"Bearer {GITHUB_TOKEN}"},
-        )
+        response = _session.post(GITHUB_GRAPHQL_URL, json=body)
 
         if response.status_code in RETRYABLE_STATUS_CODES:
             last_error = requests.exceptions.HTTPError(

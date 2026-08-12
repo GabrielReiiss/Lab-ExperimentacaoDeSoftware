@@ -18,8 +18,7 @@ def paginate(
     Generator que percorre todas as páginas de uma query paginada.
 
     Args:
-        query: query GraphQL que declara $cursor e $first, e os usa como
-            `first: $first, after: $cursor` em algum campo de conexão.
+        query: query GraphQL que declara $cursor e $first.
         base_variables: variáveis fixas da query.
         get_connection: recebe o `data` retornado por run_query() e
             devolve o objeto de conexão que contém "pageInfo" e "nodes".

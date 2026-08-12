@@ -11,6 +11,7 @@ Uso:
 """
 import argparse
 
+from src.cli.spinner import Spinner
 from src.github_client.pagination import paginate
 from src.metrics.closed_issues_ratio import extract_closed_issues_ratio
 from src.metrics.external_contribution import extract_external_contribution
@@ -55,15 +56,22 @@ def fetch_top_repositories(total: int, page_size: int = DEFAULT_PAGE_SIZE) -> li
 
     rows = []
 
-    for page in paginate(
+    pages = paginate(
         TOP_REPOSITORIES_QUERY,
         base_variables={"searchQuery": TOP_REPOSITORIES_SEARCH_QUERY},
         get_connection=lambda data: data["search"],
         page_size=page_size,
-    ):
+    )
+
+    while True:
+        with Spinner(f"Buscando página ({len(rows)}/{total} coletados)..."):
+            try:
+                page = next(pages)
+            except StopIteration:
+                break
+
         for repo in page:
             rows.append(build_row(repo))
-        print(f"  {len(rows)}/{total} coletados...")
         if len(rows) >= total:
             break
 
