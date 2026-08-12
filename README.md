@@ -18,21 +18,27 @@ repositórios com mais estrelas.
 ## Estrutura
 
 ```
-├── 📁 data                    # (pendente) CSVs gerados pela coleta
-│   ├── 📁 raw                   # (pendente) CSV dos repositórios coletados
-│   └── 📁 snapshots             # (pendente) CSVs de fechamento de sprint do GitHub Projects
-├── 📁 reports                 # (pendente) saída do relatório final
-│   └── 📁 figures               # (pendente) gráficos gerados para o relatório (Lab01S03)
-├── 📁 scripts                 # (pendente) runners que orquestram client + queries + metrics
+├── 📁 data                    # (pendente, Lab01S02) CSVs gerados pela coleta
+│   ├── 📁 raw
+│   └── 📁 snapshots            # (pendente) CSVs de fechamento de sprint do GitHub Projects
+├── 📁 reports                 # (pendente, Lab01S03) saída do relatório final
+│   └── 📁 figures
+├── 📁 scripts
+│   ├── fetch_repositories.py    # script único de consulta do grupo: 100 repos, todas as métricas
+│   └── validate_*.py            # validação individual de cada RQ em amostra pequena (Lab01S01)
 ├── 📁 src
-│   ├── 📁 analysis              # (pendente) estatísticas e gráficos (Lab01S03)
-│   ├── 📁 export                # (pendente) escrita de CSV
+│   ├── 📁 analysis              # (pendente, Lab01S03) estatísticas e gráficos
+│   ├── 📁 export                # (pendente, Lab01S02) escrita de CSV
 │   ├── 📁 github_client         # client GraphQL genérico
-│   ├── 📁 metrics               # (pendente) um extract_rqXX por RQ: o "o que fazer com a resposta"
-│   ├── 📁 queries               # (pendente) strings de query GraphQL: o "o quê perguntar" de cada RQ
+│   │   ├── client.py              # run_query(query, variables) -> data
+│   │   ├── pagination.py          # paginate(): generator por cursor (Lab01S02)
+│   │   └── errors.py              # GraphQLError
+│   ├── 📁 metrics                # extract_* de cada RQ (repo_age, external_contribution,
+│   │                              #   release_frequency, update_frequency, primary_language,
+│   │                              #   closed_issues_ratio)
+│   ├── 📁 queries                # query de cada RQ + top_repositories.py (query unificada)
 │   └── __init__.py
-├── 📁 tests
-│   └── test_pagination.py     # testa paginate() com run_query (mocks)
+├── 📁 tests                   # um teste por métrica + client/paginação/integração
 ├── .gitignore
 ├── README.md
 ├── config.py                  # carrega token/URL da API a partir do .env
