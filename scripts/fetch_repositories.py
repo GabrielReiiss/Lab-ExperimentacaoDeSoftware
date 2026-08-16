@@ -12,6 +12,7 @@ Uso:
 import argparse
 
 from src.cli.spinner import Spinner
+from src.export.csv_writer import write_csv
 from src.github_client.pagination import paginate
 from src.metrics.closed_issues_ratio import extract_closed_issues_ratio
 from src.metrics.external_contribution import extract_external_contribution
@@ -26,6 +27,7 @@ from src.queries.top_repositories import (
 
 DEFAULT_PAGE_SIZE = 10  # repositórios por requisição
 MAX_PAGE_SIZE = 100  # limite de "first" imposto pela API do GitHub
+DEFAULT_OUTPUT_PATH = "data/raw/repositories.csv"
 
 def build_row(repo: dict) -> dict:
     """Junta o resultado das 6 métricas num único dict por repositório."""
@@ -77,7 +79,7 @@ def fetch_top_repositories(total: int, page_size: int = DEFAULT_PAGE_SIZE) -> li
 
     return rows[:total]
 
-def main(total: int, page_size: int) -> None:
+def main(total: int, page_size: int, output: str) -> None:
     rows = fetch_top_repositories(total, page_size)
 
     print()
@@ -98,10 +100,14 @@ def main(total: int, page_size: int) -> None:
 
     print(f"\n{len(rows)} repositórios coletados.")
 
+    write_csv(rows, output)
+    print(f"Dados exportados para {output}")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--total", type=int, default=100)
     parser.add_argument("--page-size", type=int, default=DEFAULT_PAGE_SIZE)
+    parser.add_argument("--output", type=str, default=DEFAULT_OUTPUT_PATH)
     args = parser.parse_args()
 
-    main(args.total, args.page_size)
+    main(args.total, args.page_size, args.output)
