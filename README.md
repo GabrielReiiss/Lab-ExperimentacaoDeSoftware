@@ -7,6 +7,23 @@ pesquisa (idade, contribuição externa, releases, frequência de
 atualização, linguagem, percentual de issues fechadas) sobre os 1.000
 repositórios com mais estrelas.
 
+## Fonte de referência: linguagens mais populares (RQ05)
+
+A RQ05 pergunta se repositórios populares são escritos nas linguagens mais
+populares, comparando a distribuição de `primary_language` coletada nos
+1.000 repositórios com um ranking externo de mercado. A fonte adotada para
+esse ranking é o **GitHub Octoverse**, edição mais recente disponível no
+momento da análise formal (Lab01S03):
+
+> Octoverse 2025: ["Octoverse: A new developer joins GitHub every second as AI leads TypeScript to #1"](https://github.blog/news-insights/octoverse/octoverse-a-new-developer-joins-github-every-second-as-ai-leads-typescript-to-1/), GitHub Blog, outubro/2025.
+
+Essa é a mesma referência a ser usada em qualquer comparação com "linguagens
+mais populares" ao longo de todo o laboratório (RQ05 e o recorte por
+linguagem da RQ07), para manter consistência entre as sprints. A
+comparação quantitativa em si (distribuição coletada x ranking do
+Octoverse) fica para a análise formal da Lab01S03, conforme o cronograma
+do enunciado.
+
 ## Setup
 
 1. `pip install -r requirements.txt`
