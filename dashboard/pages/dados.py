@@ -2,12 +2,9 @@ from datetime import datetime
 
 import streamlit as st
 
-from dashboard.data import CSV_PATH, load_repositories
+from dashboard.data import CSV_PATH, PAGE_SIZE, TOTAL_REPOSITORIOS, load_repositories
 from scripts.fetch_repositories import fetch_top_repositories
 from src.export.csv_writer import write_csv
-
-TOTAL_REPOSITORIOS = 1000
-PAGE_SIZE = 10
 
 
 def render():
