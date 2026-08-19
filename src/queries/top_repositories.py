@@ -2,8 +2,8 @@
 Query unificada da Sprint 01: traz, numa única consulta, todos os
 campos necessários para as 6 métricas já validadas individualmente
 (repo_age, external_contribution, release_frequency, update_frequency,
-primary_language, closed_issues_ratio).
-
+primary_language, closed_issues_ratio), além de stargazerCount, usado
+pelo filtro de faixa de estrelas do dashboard.
 """
 
 TOP_REPOSITORIES_QUERY = """
@@ -16,6 +16,7 @@ query($searchQuery: String!, $first: Int!, $cursor: String) {
         owner { login }
         createdAt
         pushedAt
+        stargazerCount
         primaryLanguage { name }
         pullRequests(states: MERGED) {
           totalCount

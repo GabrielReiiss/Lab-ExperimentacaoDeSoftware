@@ -34,6 +34,7 @@ def build_row(repo: dict) -> dict:
     return {
         "name": repo["name"],
         "owner": repo["owner"]["login"],
+        "stars": repo["stargazerCount"],
         "age_days": extract_repo_age(repo),
         "merged_pull_requests": extract_external_contribution(repo),
         "releases": extract_release_frequency(repo),
@@ -85,7 +86,7 @@ def main(total: int, page_size: int, output: str) -> None:
     print()
 
     header = (
-        f"{'Repositório':<45} {'Idade(d)':>9} {'PRs':>6} {'Releases':>9} "
+        f"{'Repositório':<45} {'Estrelas':>9} {'Idade(d)':>9} {'PRs':>6} {'Releases':>9} "
         f"{'Últ. att(d)':>12} {'Linguagem':<12} {'Issues fech.':>13}"
     )
     print(header)
@@ -93,7 +94,7 @@ def main(total: int, page_size: int, output: str) -> None:
         ratio = "—" if row["closed_issues_ratio"] is None else f"{row['closed_issues_ratio']:.0%}"
         nome = f"{row['owner']}/{row['name']}"
         print(
-            f"{nome:<45} {row['age_days']:>9} {row['merged_pull_requests']:>6} "
+            f"{nome:<45} {row['stars']:>9} {row['age_days']:>9} {row['merged_pull_requests']:>6} "
             f"{row['releases']:>9} {row['update_frequency_days']:>12} "
             f"{str(row['primary_language']):<12} {ratio:>13}"
         )
