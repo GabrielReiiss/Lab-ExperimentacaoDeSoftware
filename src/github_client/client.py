@@ -12,9 +12,13 @@ from src.github_client.errors import GraphQLError
 
 MAX_ATTEMPTS = 3
 RETRY_DELAY_SECONDS = 2  # espera entre tentativas, dobra a cada retry (backoff)
+REQUEST_TIMEOUT_SECONDS = 15  # tempo máximo esperando resposta antes de desistir da tentativa
 
 # Erros do lado do servidor do GitHub.
 RETRYABLE_STATUS_CODES = {502, 503, 504}
+
+# Erros de rede 
+RETRYABLE_NETWORK_ERRORS = (requests.exceptions.Timeout, requests.exceptions.ConnectionError)
 
 # Sessão HTTP reaproveitada entre todas as chamadas.
 _session = requests.Session()
@@ -28,7 +32,9 @@ def run_query(query: str, variables: dict = None) -> dict:
     se a resposta trouxer a chave "errors".
 
     Tenta de novo até MAX_ATTEMPTS vezes se a API responder com um erro
-    5xx transiente (502/503/504).
+    5xx transiente (502/503/504) ou se a requisição travar/der timeout
+    (REQUEST_TIMEOUT_SECONDS). Se esgotar as tentativas, propaga a
+    exceção (HTTPError ou a exceção de rede do requests) para quem chamou.
     """
     body = {"query": query}
     if variables is not None:
@@ -37,7 +43,16 @@ def run_query(query: str, variables: dict = None) -> dict:
     last_error = None
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        response = _session.post(GITHUB_GRAPHQL_URL, json=body)
+        try:
+            response = _session.post(
+                GITHUB_GRAPHQL_URL, json=body, timeout=REQUEST_TIMEOUT_SECONDS
+            )
+        except RETRYABLE_NETWORK_ERRORS as network_error:
+            last_error = network_error
+            if attempt < MAX_ATTEMPTS:
+                time.sleep(RETRY_DELAY_SECONDS * attempt)
+                continue
+            raise
 
         if response.status_code in RETRYABLE_STATUS_CODES:
             last_error = requests.exceptions.HTTPError(
