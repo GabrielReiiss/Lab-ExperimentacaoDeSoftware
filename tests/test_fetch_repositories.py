@@ -12,6 +12,7 @@ FAKE_REPO = {
     "owner": {"login": "example-owner"},
     "createdAt": "2015-01-01T00:00:00Z",
     "pushedAt": "2024-01-01T00:00:00Z",
+    "stargazerCount": 1500,
     "primaryLanguage": {"name": "Python"},
     "pullRequests": {"totalCount": 42},
     "releases": {"totalCount": 7},
@@ -24,6 +25,7 @@ def test_build_row_combines_all_metrics():
 
     assert row["name"] == "example-repo"
     assert row["owner"] == "example-owner"
+    assert row["stars"] == 1500
     assert row["age_days"] > 0
     assert row["merged_pull_requests"] == 42
     assert row["releases"] == 7

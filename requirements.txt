@@ -3,3 +3,4 @@ python-dotenv
 pytest
 streamlit
 pandas
+plotly
