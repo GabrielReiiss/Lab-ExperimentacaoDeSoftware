@@ -5,8 +5,9 @@ o padrão de conexão do GitHub GraphQL (pageInfo { hasNextPage endCursor }
 
 Além de percorrer as páginas, ajusta adaptativamente o page_size: cresce
 depois de uma sequência de páginas bem-sucedidas, encolhe depois de uma
-sequência de falhas transitórias (timeout/erro 5xx que já esgotaram o
-retry interno de run_query). Para evitar flapping (crescer, falhar,
+sequência de falhas transitórias (timeout/erro de conexão/erro 5xx/corpo
+de resposta inválido, que já esgotaram o retry interno de run_query).
+Para evitar flapping (crescer, falhar,
 encolher, crescer de novo pro mesmo valor que já tinha falhado), o
 page_size que causou a última sequência de falhas vira um teto.
 """
@@ -101,6 +102,21 @@ def paginate(
             failed_pages += 1
             print(
                 f"\nErro {status_code} na API do GitHub "
+                f"(falha {failed_pages}/{FAILURE_STREAK_TO_SHRINK})."
+            )
+            if failed_pages >= MAX_CONSECUTIVE_FAILURES:
+                raise
+            time.sleep(RETRY_BACKOFF_SECONDS * failed_pages)
+            continue
+        except (
+            requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.JSONDecodeError,
+        ) as error:
+            successful_pages = 0
+            failed_pages += 1
+            print(
+                f"\n{type(error).__name__} na requisição à API do GitHub "
                 f"(falha {failed_pages}/{FAILURE_STREAK_TO_SHRINK})."
             )
             if failed_pages >= MAX_CONSECUTIVE_FAILURES:

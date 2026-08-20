@@ -32,9 +32,11 @@ def run_query(query: str, variables: dict = None) -> dict:
     se a resposta trouxer a chave "errors".
 
     Tenta de novo até MAX_ATTEMPTS vezes se a API responder com um erro
-    5xx transiente (502/503/504) ou se a requisição travar/der timeout
-    (REQUEST_TIMEOUT_SECONDS). Se esgotar as tentativas, propaga a
-    exceção (HTTPError ou a exceção de rede do requests) para quem chamou.
+    5xx transiente (502/503/504), se a requisição travar/der timeout
+    (REQUEST_TIMEOUT_SECONDS), ou se o corpo da resposta vier vazio/inválido
+    (glitch passageiro do gateway do GitHub). Se esgotar as tentativas,
+    propaga a exceção (HTTPError, exceção de rede do requests, ou
+    JSONDecodeError) para quem chamou.
     """
     body = {"query": query}
     if variables is not None:
@@ -65,7 +67,15 @@ def run_query(query: str, variables: dict = None) -> dict:
             raise last_error
 
         response.raise_for_status()
-        payload = response.json()
+
+        try:
+            payload = response.json()
+        except requests.exceptions.JSONDecodeError as decode_error:
+            last_error = decode_error
+            if attempt < MAX_ATTEMPTS:
+                time.sleep(RETRY_DELAY_SECONDS * attempt)
+                continue
+            raise
 
         if payload.get("errors") is not None:
             raise GraphQLError(payload["errors"][0]["message"], payload["errors"])

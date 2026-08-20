@@ -73,8 +73,15 @@ def render():
         "métrica original não é numérica."
     )
 
-    st.subheader("Radar")
-    st.caption("Comparação entre os dois formatos considerados para essa issue.")
+    st.subheader("Perfil do repositório nas 6 métricas")
+    st.caption(
+        "Mesmos percentis do gráfico de barras acima, num formato que destaca o formato geral "
+        "do perfil: quanto mais próximo da borda externa em cada eixo, melhor a posição do "
+        "repositório naquela métrica em relação aos outros 999."
+    )
+
+    BAR_BLUE = "rgba(76, 120, 168, 0.85)"  # mesmo azul das barras do gráfico acima
+    REPO_FILL = "rgba(183, 201, 220, 0.5)"  # tom claro do mesmo azul, translúcido
 
     radar_categories = chart_data["Métrica"].tolist()
     radar_values = chart_data["Percentil"].tolist()
@@ -84,12 +91,25 @@ def render():
             r=radar_values + radar_values[:1],
             theta=radar_categories + radar_categories[:1],
             fill="toself",
+            fillcolor=REPO_FILL,
+            line=dict(color="white", width=2),
+            marker=dict(color="white", size=5),
             name=escolhido,
             hovertemplate="%{theta}: %{r:.0f}<extra></extra>",
         )
     )
     radar_fig.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+        polar=dict(
+            bgcolor=BAR_BLUE,
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100],
+                tickfont=dict(color="white", size=12),
+                gridcolor="rgba(255, 255, 255, 0.35)",
+                linecolor="rgba(255, 255, 255, 0.6)",
+            ),
+            angularaxis=dict(gridcolor="rgba(255, 255, 255, 0.35)"),
+        ),
         showlegend=False,
         margin=dict(t=20, b=20),
     )

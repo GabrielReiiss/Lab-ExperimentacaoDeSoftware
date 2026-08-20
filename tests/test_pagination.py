@@ -1,8 +1,9 @@
 """
 Testa paginate() sem bater na API de verdade, usando mocks.
 """
-from src.github_client import pagination
+import requests
 
+from src.github_client import pagination
 
 def fake_pages():
     return [
@@ -19,7 +20,6 @@ def fake_pages():
             }
         },
     ]
-
 
 def test_paginate_stops_when_has_next_page_is_false(monkeypatch):
     pages = iter(fake_pages())
@@ -38,3 +38,38 @@ def test_paginate_stops_when_has_next_page_is_false(monkeypatch):
         [{"name": "repo-a"}, {"name": "repo-b"}],
         [{"name": "repo-c"}],
     ]
+
+def test_paginate_recovers_from_read_timeout_instead_of_crashing(monkeypatch):
+    """
+    Reproduz o crash relatado: run_query esgota o retry interno e propaga um
+    ReadTimeout (subclasse de Timeout) puro, sem ser um HTTPError. paginate()
+    precisa tratar isso como falha transitória, não deixar a exceção escapar.
+    """
+    monkeypatch.setattr(pagination.time, "sleep", lambda seconds: None)
+
+    calls = {"n": 0}
+
+    def flaky_run_query(query, variables):
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            raise requests.exceptions.ReadTimeout("Read timed out. (read timeout=15)")
+        return {
+            "search": {
+                "pageInfo": {"hasNextPage": False, "endCursor": "cursor-1"},
+                "nodes": [{"name": "repo-a"}],
+            }
+        }
+
+    monkeypatch.setattr(pagination, "run_query", flaky_run_query)
+
+    result = list(
+        pagination.paginate(
+            query="query fake",
+            base_variables={},
+            get_connection=lambda data: data["search"],
+            page_size=2,
+        )
+    )
+
+    assert result == [[{"name": "repo-a"}]]
+    assert calls["n"] == 3
