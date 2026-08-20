@@ -7,12 +7,15 @@ import requests
 from src.github_client import client
 
 class FakeResponse:
-    def __init__(self, status_code: int, json_data: dict = None, reason: str = ""):
+    def __init__(self, status_code: int, json_data: dict = None, reason: str = "", invalid_json: bool = False):
         self.status_code = status_code
         self.reason = reason
         self._json_data = json_data or {}
+        self._invalid_json = invalid_json
 
     def json(self):
+        if self._invalid_json:
+            raise requests.exceptions.JSONDecodeError("Expecting value", "", 0)
         return self._json_data
 
     def raise_for_status(self):
@@ -62,3 +65,17 @@ def test_run_query_does_not_retry_on_graphql_error(monkeypatch):
         assert type(e).__name__ == "GraphQLError"
 
     assert call_count["n"] == 1
+
+def test_run_query_retries_on_invalid_json_body_and_succeeds(monkeypatch):
+    responses = iter(
+        [
+            FakeResponse(200, invalid_json=True),
+            FakeResponse(200, {"data": {"viewer": {"login": "felipeaps46"}}}),
+        ]
+    )
+    monkeypatch.setattr(client._session, "post", lambda *a, **k: next(responses))
+    monkeypatch.setattr(client.time, "sleep", lambda seconds: None)
+
+    data = client.run_query("{ viewer { login } }")
+
+    assert data == {"viewer": {"login": "felipeaps46"}}
