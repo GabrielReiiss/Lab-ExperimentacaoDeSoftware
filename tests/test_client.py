@@ -1,6 +1,7 @@
 """
-Testa o retry de run_query() em erro 502/503/504, sem bater na API real. 
-Substitui requests.post por uma função mocada.
+Testa o retry de run_query() em erro 502/503/504, sem bater na API real.
+Substitui client._session.post (a Session reaproveitada por run_query)
+por uma função mocada.
 """
 import requests
 
@@ -30,7 +31,7 @@ def test_run_query_retries_on_502_and_succeeds(monkeypatch):
             FakeResponse(200, {"data": {"viewer": {"login": "felipeaps46"}}}),
         ]
     )
-    monkeypatch.setattr(client.requests, "post", lambda *a, **k: next(responses))
+    monkeypatch.setattr(client._session, "post", lambda *a, **k: next(responses))
     monkeypatch.setattr(client.time, "sleep", lambda seconds: None)
 
     data = client.run_query("{ viewer { login } }")
@@ -39,7 +40,7 @@ def test_run_query_retries_on_502_and_succeeds(monkeypatch):
 
 def test_run_query_raises_after_max_attempts(monkeypatch):
     monkeypatch.setattr(
-        client.requests, "post", lambda *a, **k: FakeResponse(502, reason="Bad Gateway")
+        client._session, "post", lambda *a, **k: FakeResponse(502, reason="Bad Gateway")
     )
     monkeypatch.setattr(client.time, "sleep", lambda seconds: None)
 
@@ -56,7 +57,7 @@ def test_run_query_does_not_retry_on_graphql_error(monkeypatch):
         call_count["n"] += 1
         return FakeResponse(200, {"errors": [{"message": "Field 'x' doesn't exist"}]})
 
-    monkeypatch.setattr(client.requests, "post", fake_post)
+    monkeypatch.setattr(client._session, "post", fake_post)
 
     try:
         client.run_query("{ x }")
