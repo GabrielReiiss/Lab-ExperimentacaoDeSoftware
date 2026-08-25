@@ -88,33 +88,72 @@ Este documento é um MODELO válido para qualquer um dos 5 laboratórios da disc
 
 ### 4.1 Coleta de Dados
 
-*ORIENTAÇÃO: Relate o volume final de dados efetivamente coletado e analisado — não apenas o volume-alvo do enunciado. Informe: quantos itens restaram após os filtros de qualidade (ex.: dos 1.000 repositórios buscados, quantos tinham dados completos; dos repositórios candidatos, quantos de fato usavam GitHub Actions — Lab03); o período coberto pela coleta; quantos trials/execuções foram concluídos dentro do tempo (Lab02); quantos snapshots do Kanban estão disponíveis e desde quando (Lab04/Lab05); outliers ou dados ausentes identificados, e como foram tratados (removidos, mantidos e discutidos à parte, etc.).*
+A coleta mais recente reúne 980 dos 1.000 repositórios-alvo (23/08/2026), buscados via GraphQL pelo número de estrelas. A diferença para a meta é esperada: falhas transitórias de rede/timeout na API do GitHub descartam páginas isoladas da paginação sem interromper a coleta, e o próprio ranking de estrelas muda um pouco a cada execução do script.
 
-*[conteúdo do grupo — substituir este texto]*
+Das seis métricas usadas para responder as RQs, quatro não têm nenhum valor ausente porque derivam de campos sempre presentes na API (data de criação, data do último push, contagens diretas). As outras duas têm ausência real, documentada e não preenchida artificialmente:
+
+| RQ | Métrica | Válidos | Ausentes | % ausentes | Motivo da ausência |
+|---|---|---|---|---|---|
+| RQ01 | Idade (dias) | 980 | 0 | 0% | — |
+| RQ02 | PRs mescladas | 980 | 0 | 0% | — |
+| RQ03 | Releases | 980 | 0 | 0% | — |
+| RQ04 | Dias desde atualização | 980 | 0 | 0% | — |
+| RQ05 | Linguagem primária | 897 | 83 | 8,5% | Repositório sem código-fonte majoritário (ex.: listas de recursos, e-books) |
+| RQ06 | Razão de issues fechadas | 938 | 42 | 4,3% | Repositório sem nenhuma issue registrada (rastreador desligado ou não usado) |
+
+Três grupos de outliers foram identificados e mantidos na amostra, com a ressalva discutida na seção 4.3: `firstcontributions/first-contributions`, com 103.516 PRs mescladas (repositório-tutorial, não comparável a projetos reais); 23 repositórios com exatamente 1000 releases, teto conhecido do campo na API do GitHub (confirmado à parte para o `electron`, que tem 1981 releases reais); e 26 repositórios com razão de issues fechadas de exatamente 100%.
 
 ### 4.2 Visualização Gráfica
 
-*ORIENTAÇÃO: Para cada Questão de Pesquisa (do enunciado e das RQs de inovação do grupo), inclua ao menos uma visualização que a responda diretamente, com a pergunta enunciada em texto imediatamente antes do gráfico correspondente, eixos nomeados com clareza e a medida de tendência central adequada indicada (mediana costuma ser preferível a média quando há outliers ou distribuição assimétrica — comum em dados de repositórios de software). Use o tipo de gráfico adequado ao tipo de pergunta, conforme a tabela abaixo, e explicite no texto os valores-chave que aparecem no gráfico (não deixe o leitor "adivinhar" o número a partir da figura).*
+Os seis gráficos abaixo são gerados dinamicamente pelo Dashboard Exploratório, recalculados conforme os filtros de linguagem, estrelas e idade aplicados pelo usuário. Os valores citados em texto correspondem à amostra completa (980 repositórios), sem filtro.
 
-| Tipo de pergunta / dado | Gráfico recomendado |
-|---|---|
-| Comparar uma métrica entre categorias (ex.: linguagem, benchmark DORA) | Barras (ranking) — ordenadas por valor, não alfabeticamente |
-| Comparar dois tratamentos no mesmo grupo (ex.: com IA vs. sem IA) | Boxplot pareado ou gráfico de pontos conectados (before/after) |
-| Distribuição de uma métrica numérica (ex.: idade dos repositórios) | Histograma ou boxplot |
-| Relação entre duas métricas numéricas (ex.: RQ07 do Lab01, RQ05 do Lab03) | Gráfico de dispersão (scatter plot) |
-| Evolução ao longo do tempo (ex.: cycle time por sprint) | Linha, com um ponto por sprint/snapshot |
-| Composição/fluxo do Kanban ao longo do tempo (Cumulative Flow Diagram) | Área empilhada (uma camada por coluna do board) |
-| Proporção de categorias (ex.: % de issues fechadas) | Barra única 100% ou barras simples — evite pizza com muitas fatias |
+**RQ01 — Sistemas populares são maduros/antigos?**
+Histograma da idade dos repositórios, em dias desde a criação. Mediana de 2834 dias (~7,8 anos), variando de 10 a 6708 dias (~18,4 anos). Os cinco repositórios mais antigos da amostra são `rails`, `git`, `jekyll`, `redis` e `jquery`, todos criados entre 2008 e 2009.
 
-*[Insira aqui os gráficos do grupo, um por RQ, cada um precedido da pergunta que ele responde]*
+![RQ01: Idade dos repositórios](data/Prints/rq01.png)
+
+**RQ02 — Sistemas populares recebem muita contribuição externa?**
+Boxplot (escala logarítmica) do total de pull requests mescladas. Mediana de 768 PRs. 19 repositórios (1,9%) aparecem com zero PRs, incluindo `torvalds/linux` e `FFmpeg/FFmpeg`, que usam fluxo de contribuição por lista de e-mail em vez de pull request do GitHub.
+
+![RQ02: Contribuição externa](data/Prints/rq02.png)
+
+**RQ03 — Sistemas populares lançam releases com frequência?**
+Histograma do total de releases. Mediana geral de 37,5 releases; considerando só quem lança ao menos uma release, a mediana sobe para 95. 288 repositórios (29,4%) não têm nenhuma release.
+
+![RQ03: Frequência de releases](data/Prints/rq03.png)
+
+**RQ04 — Sistemas populares são atualizados com frequência?**
+Histograma dos dias desde a última atualização. Mediana de 2 dias; 305 repositórios (31,1%) foram atualizados no mesmo dia da coleta. 114 repositórios (11,6%) estão parados há mais de um ano, o caso mais extremo com 2455 dias (~6,7 anos) sem atualização.
+
+![RQ04: Frequência de atualização](data/Prints/rq04.png)
+
+**RQ05 — Sistemas populares são escritos nas linguagens mais populares?**
+Gráfico de barras da distribuição de linguagens primárias, comparada ao ranking GitHub Octoverse 2025. 43 linguagens distintas identificadas. Top 3: Python (23,0%), TypeScript (17,3%) e JavaScript (11,1%), 51,4% acumulado.
+
+![RQ05: Linguagem](data/Prints/rq05.png)
+
+**RQ06 — Sistemas populares possuem um alto percentual de issues fechadas?**
+Histograma da razão entre issues fechadas e total de issues. Mediana de 87,5%, mínimo de 7,6%, máximo de 100%.
+
+![RQ06: Issues fechadas](data/Prints/rq06.png)
 
 ### 4.3 Discussão
 
-*ORIENTAÇÃO: Para cada RQ (do enunciado e das RQs de inovação do grupo), compare explicitamente a hipótese informal levantada na Introdução com o resultado efetivamente obtido — hipótese confirmada, refutada, ou parcialmente confirmada, e por quê. Quando houver teste estatístico (ex.: Wilcoxon no Lab02), reporte o valor obtido e interprete o que ele significa em linguagem acessível, não apenas o número bruto. Discuta as ameaças à validade específicas do laboratório (ex.: efeito de aprendizado entre katas e risco de memorização pela IA — Lab02; diferença de dificuldade entre laboratórios distintos confundindo a tendência de cycle time — Lab05; lacunas nos snapshots do Kanban — Lab05). Finalize relacionando o que as inovações do grupo (seção 3.6) acrescentaram: elas confirmaram, contradisseram ou aprofundaram o que os 70% do enunciado já mostravam?*
+**RQ01 — hipótese confirmada.** A mediana de ~7,8 anos e a concentração dos cinco repositórios mais antigos (2008-2009) entre os mais populares sustentam a expectativa de que popularidade se acumula ao longo do tempo. Ressalva: existe uma cauda de repositórios recém-criados (o mais novo tem 10 dias de existência), sinal de que picos de interesse pontuais, como lançamentos ligados a IA, também conseguem entrar rapidamente no top 1000, sem esperar anos de exposição.
 
-*(Favor inserir a referência de vídeo do youtube em referências https://www.youtube.com/shorts/YwnaeO95AN8).*
+**RQ02 — hipótese confirmada.** A mediana de 768 PRs mescladas indica volume relevante de contribuição externa. Ameaça à validade: a métrica subestima colaboração em projetos que não usam o fluxo de pull request do GitHub (`linux`, `FFmpeg`, zero PRs registrados apesar de serem projetos ativos), e o outlier `first-contributions` (103.516 PRs, repositório-tutorial) precisa ser excluído de qualquer análise agregada por média, sob risco de distorcer a conclusão.
 
-*[conteúdo do grupo — substituir este texto]*
+**RQ03 — hipótese parcialmente confirmada.** A mediana condicionada a quem lança ao menos uma release (95) sustenta a ideia de cadência estruturada entre quem usa o recurso, mas 29,4% da amostra não lança nenhuma release, contrariando a expectativa de que a maioria adotaria ciclos formais de versionamento (muitos desses são listas de recursos ou material de referência, que popularizam sem seguir um processo de release tradicional). O teto de 1000 no campo, confirmado à parte para o `electron`, é uma ameaça à validade real: a mediana geral (37,5) é subestimada para os projetos mais ativos, que provavelmente ultrapassam esse valor.
+
+**RQ04 — hipótese confirmada.** A mediana de apenas 2 dias e quase um terço da amostra (31,1%) atualizada no mesmo dia da coleta mostram manutenção ativa na maioria dos projetos populares. A minoria parada há mais de um ano (11,6%) reforça a hipótese em vez de contradizê-la: em geral são materiais de referência estáticos (livros, roadmaps), não projetos de software que exigiam manutenção contínua e a perderam.
+
+**RQ05 — hipótese confirmada parcialmente.** Usando o GitHub Octoverse 2025 como referência, Python, TypeScript e JavaScript concentram 51,4% da amostra e ocupam as três primeiras posições também no ranking de referência, confirmando a expectativa central. Mas a ordem interna diverge (Python é 1º na amostra e 2º na referência) e duas linguagens de peso corporativo no Octoverse, Java (4º na referência, 8º na amostra, 4,0%) e C# (5º na referência, 16º na amostra, 0,8%), aparecem bem abaixo do esperado, indício de que popularidade por estrelas no GitHub favorece ecossistemas de scripting, web e IA mais do que linguagens tipicamente usadas em software corporativo fechado.
+
+**RQ06 — hipótese confirmada.** A mediana de 87,5% de issues fechadas é uma taxa alta, sustentando a expectativa de que repositórios populares recebem atenção de manutenção suficiente para resolver a maioria dos problemas relatados. Ressalva dupla: repositórios sem nenhuma issue registrada (4,3%) ficam fora do cálculo, incluindo casos como o `linux`, que desliga deliberadamente o rastreador de Issues do GitHub; e 2,7% da amostra tem razão de exatamente 100%, incluindo repositórios com milhares de issues todas fechadas, o que sugere bots de triagem automática ou política agressiva de fechamento, não necessariamente resolução manual de cada problema.
+
+**Ameaças à validade gerais.** Os dados são um retrato de um único instante (23/08/2026): o ranking de estrelas, a contagem de releases e a razão de issues fechadas mudam continuamente, então uma nova coleta produz números levemente diferentes dos aqui reportados, como já observado entre coletas anteriores do grupo. O teto de 1000 no campo `releases` e os projetos que não usam o fluxo nativo de pull request do GitHub são limitações da própria API, não do método de coleta do grupo. O Octoverse 2025 mede popularidade de linguagem no GitHub como um todo, não especificamente entre os repositórios mais populares, então a comparação da RQ05 é uma aproximação.
+
+As inovações do grupo, detalhadas na seção 3.6, aprofundam esses resultados combinando as seis métricas num índice único de saúde/maturidade por repositório; a discussão específica dela é apresentada naquela seção.
 
 ## 5. Conclusão
 
@@ -125,4 +164,4 @@ Este documento é um MODELO válido para qualquer um dos 5 laboratórios da disc
 ## 5. Referências
 
 - ZUSE, Horst. A framework of software measurement. Walter de Gruyter, 2013.
-- 
+- GitHub Octoverse 2025 - ranking de linguagens mais populares, referência da RQ05. 
