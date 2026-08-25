@@ -8,6 +8,7 @@ from dashboard.sections import (
     rq04_atualizacao,
     rq05_linguagem,
     rq06_issues,
+    rq07_por_linguagem,
 )
 
 
@@ -49,3 +50,4 @@ def render():
     rq04_atualizacao.render(filtrado)
     rq05_linguagem.render(filtrado)
     rq06_issues.render(filtrado)
+    rq07_por_linguagem.render(filtrado)
