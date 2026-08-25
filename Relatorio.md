@@ -84,6 +84,10 @@ Este documento é um MODELO válido para qualquer um dos 5 laboratórios da disc
 
 *[conteúdo do grupo — substituir este texto]*
 
+**Índice composto de saúde/maturidade do repositório.** As seis RQs do enunciado respondem, cada uma isoladamente, "esse repositório é antigo?", "recebe muita contribuição?", "libera releases com frequência?", mas nenhuma delas diz, sozinha, se um repositório é *no geral* saudável e maduro. Essa inovação existe para preencher essa lacuna: resume as seis métricas num único score de 0 a 1 por repositório, permitindo comparar e ranquear os repositórios da amostra por uma nota geral de maturidade, em vez de olhar métrica por métrica (`src/analysis/health_index.py`, `scripts/compute_health_index.py`). O score é uma média ponderada das seis métricas, cada uma antes normalizada por min-max (0 a 1); os pesos refletem o quanto cada métrica sinaliza saúde/maturidade de forma direta e pouco ruidosa: PRs aceitas (25%, sinal mais direto de colaboração externa), idade (20%), releases (15%), atualização recente (15%), linguagem popular (15%) e razão de issues fechadas (10%, menor peso por variar muito entre processos de projeto). `update_frequency_days` entra invertida antes da normalização, para que "atualizado há pouco tempo" pese a favor do score, e não contra.
+
+**Análise de correlação entre as métricas.** O grupo calculou a matriz de correlação (Pearson e Spearman) entre as seis métricas normalizadas por min-max (idade, PRs aceitas, releases, tempo desde a última atualização, razão de issues fechadas e linguagem popular), implementada em `src/analysis/correlation.py` e `scripts/compute_correlations.py`. Além da matriz completa, o script reporta explicitamente os quatro pares indicados como prioritários (idade × releases, idade × razão de issues fechadas, PRs aceitas × releases, tempo desde update × razão de issues fechadas) e gera um scatterplot com linha de tendência para todo par, entre os 15 possíveis, com `|r| de Pearson| > 0,3`. O objetivo é verificar se as métricas usadas nas RQs do enunciado, tratadas de forma isolada, escondem relações entre si que ajudem a explicar os resultados da seção 4.3, os resultados e a interpretação de cada par relevante estão na seção 4.4.
+
 ## 4. Resultados
 
 ### 4.1 Coleta de Dados
@@ -162,7 +166,45 @@ Três gráficos de barras (PRs mescladas, releases e dias desde atualização, c
 
 **Ameaças à validade gerais.** Os dados são um retrato de um único instante (23/08/2026): o ranking de estrelas, a contagem de releases e a razão de issues fechadas mudam continuamente, então uma nova coleta produz números levemente diferentes dos aqui reportados, como já observado entre coletas anteriores do grupo. O teto de 1000 no campo `releases` e os projetos que não usam o fluxo nativo de pull request do GitHub são limitações da própria API, não do método de coleta do grupo. O Octoverse 2025 mede popularidade de linguagem no GitHub como um todo, não especificamente entre os repositórios mais populares, então a comparação da RQ05 é uma aproximação.
 
-As inovações do grupo, detalhadas na seção 3.6, aprofundam esses resultados combinando as seis métricas num índice único de saúde/maturidade por repositório; a discussão específica dela é apresentada naquela seção.
+As inovações do grupo, detalhadas na seção 3.6, aprofundam esses resultados combinando as seis métricas num índice único de saúde/maturidade por repositório e cruzando-as par a par numa matriz de correlação; a discussão específica de cada uma é apresentada naquela seção e, no caso da correlação, detalhada a seguir em 4.4.
+
+### 4.4 Análise de Correlação entre Métricas
+
+Matriz de correlação de Pearson entre as seis métricas normalizadas por min-max (`update_frequency_days` invertida antes da normalização, como no índice de saúde, de modo que valor alto = atualização mais recente):
+
+| | Idade | PRs aceitas | Releases | Atualização recente | Issues fechadas | Linguagem popular |
+|---|---|---|---|---|---|---|
+| **Idade** | 1,00 | 0,21 | 0,04 | -0,11 | 0,24 | -0,14 |
+| **PRs aceitas** | 0,21 | 1,00 | 0,33 | 0,15 | 0,16 | -0,04 |
+| **Releases** | 0,04 | 0,33 | 1,00 | 0,20 | 0,24 | 0,05 |
+| **Atualização recente** | -0,11 | 0,15 | 0,20 | 1,00 | 0,32 | 0,01 |
+| **Issues fechadas** | 0,24 | 0,16 | 0,24 | 0,32 | 1,00 | 0,04 |
+| **Linguagem popular** | -0,14 | -0,04 | 0,05 | 0,01 | 0,04 | 1,00 |
+
+A matriz de Spearman segue o mesmo formato; os valores usados no texto abaixo vêm dela quando divergem do Pearson.
+
+**Pares solicitados pela issue #33:**
+
+- **Idade × Releases**: r=0,04, ρ=0,06 — correlação praticamente nula. Repositórios mais antigos não lançam sistematicamente mais releases: idade sozinha não é um bom preditor de cadência de versionamento (consistente com a ressalva da RQ03, onde 29,4% da amostra nunca lança release, independente de quanto tempo existe).
+- **Idade × Razão de issues fechadas**: r=0,24, ρ=0,24 — correlação positiva fraca. Repositórios mais antigos tendem a ter uma razão de issues fechadas um pouco maior, possivelmente por terem tido mais tempo para amadurecer processo de triagem, mas o efeito é pequeno demais para ser a explicação principal da alta mediana observada na RQ06 (87,5%).
+- **PRs aceitas × Releases**: r=0,33, ρ=0,59 — correlação positiva fraca a moderada, com divergência relevante entre os dois coeficientes. A diferença indica que a relação é mais monotônica do que linear (esperado, já que ambas as métricas têm distribuição bastante assimétrica, com poucos repositórios concentrando valores muito altos): projetos que recebem mais contribuição externa mesclada tendem a lançar mais releases, mas não numa proporção constante.
+- **Atualização recente × Razão de issues fechadas**: r=0,32, ρ=0,30 — correlação positiva fraca. Como a métrica de atualização foi invertida (valor alto = atualização mais recente), o resultado indica que repositórios atualizados mais recentemente tendem a fechar uma fração maior de suas issues — coerente com a ideia de manutenção ativa incluir também o fechamento de issues, não só commits/releases.
+
+**Pares com `|r|` de Pearson `> 0,3`** (os dois únicos entre os 15 possíveis; scatterplots gerados por `scripts/compute_correlations.py` em `reports/figures/`):
+
+**PRs aceitas × Releases**
+
+![Correlação entre PRs aceitas e Releases](reports/figures/corr_merged_pull_requests_x_releases.png)
+
+PRs aceitas e Releases apresentam correlação positiva fraca a moderada (Pearson r=0,33, Spearman ρ=0,59): colaboração externa e cadência de release andam juntas na amostra, mas de forma não estritamente linear — a maior parte dos repositórios se concentra em valores normalizados baixos de ambas as métricas, com uma cauda de poucos projetos muito ativos em ambas.
+
+**Atualização recente × Razão de issues fechadas**
+
+![Correlação entre atualização recente e razão de issues fechadas](reports/figures/corr_update_frequency_days_x_closed_issues_ratio.png)
+
+Atualização recente e razão de issues fechadas apresentam correlação positiva fraca (Pearson r=0,32, Spearman ρ=0,30): repositórios com atualização mais recente tendem a fechar uma fração maior das suas issues, sugerindo que times ativos tratam commits/releases e a fila de issues como parte do mesmo ciclo de manutenção, em vez de tratar um e negligenciar o outro.
+
+**Leitura geral.** Nenhum dos pares da matriz passa de correlação moderada (`|r|` máximo de 0,33 no Pearson), o que reforça que as seis métricas usadas nas RQs do enunciado capturam, em grande parte, dimensões distintas da popularidade/maturidade de um repositório — nenhuma delas é redundante o suficiente para ser descartada em favor de outra. Isso também justifica, a posteriori, a escolha de combiná-las por média ponderada (em vez de descartar alguma por colinearidade) no índice de saúde/maturidade da seção 3.6.
 
 ## 5. Conclusão
 
