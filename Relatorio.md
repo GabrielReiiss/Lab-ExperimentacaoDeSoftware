@@ -103,9 +103,11 @@ Das seis métricas usadas para responder as RQs, quatro não têm nenhum valor a
 
 Três grupos de outliers foram identificados e mantidos na amostra, com a ressalva discutida na seção 4.3: `firstcontributions/first-contributions`, com 103.516 PRs mescladas (repositório-tutorial, não comparável a projetos reais); 23 repositórios com exatamente 1000 releases, teto conhecido do campo na API do GitHub (confirmado à parte para o `electron`, que tem 1981 releases reais); e 26 repositórios com razão de issues fechadas de exatamente 100%.
 
+A RQ07 não é uma métrica coletada à parte — é RQ02, RQ03 e RQ04 agrupadas pela linguagem da RQ05, então não tem linha própria na tabela acima. Ela usa a amostra completa de 980 repositórios sem perder nenhum: os 83 sem linguagem detectada (já contados na ausência da RQ05) não são excluídos do agrupamento, entram na categoria "Outras" junto com as linguagens de baixa frequência.
+
 ### 4.2 Visualização Gráfica
 
-Os seis gráficos abaixo são gerados dinamicamente pelo Dashboard Exploratório, recalculados conforme os filtros de linguagem, estrelas e idade aplicados pelo usuário. Os valores citados em texto correspondem à amostra completa (980 repositórios), sem filtro.
+Os sete gráficos abaixo são gerados dinamicamente pelo Dashboard Exploratório, recalculados conforme os filtros de linguagem, estrelas e idade aplicados pelo usuário. Os valores citados em texto correspondem à amostra completa (980 repositórios), sem filtro.
 
 **RQ01 — Sistemas populares são maduros/antigos?**
 Histograma da idade dos repositórios, em dias desde a criação. Mediana de 2834 dias (~7,8 anos), variando de 10 a 6708 dias (~18,4 anos). Os cinco repositórios mais antigos da amostra são `rails`, `git`, `jekyll`, `redis` e `jquery`, todos criados entre 2008 e 2009.
@@ -137,6 +139,11 @@ Histograma da razão entre issues fechadas e total de issues. Mediana de 87,5%, 
 
 ![RQ06: Issues fechadas](data/Prints/rq06.png)
 
+**RQ07 — Sistemas escritos em linguagens mais populares recebem mais contribuição externa, lançam mais releases e são atualizados com mais frequência?**
+Três gráficos de barras (PRs mescladas, releases e dias desde atualização, cada um com mediana por linguagem, top 10 + "Outras"). Comparando as 5 linguagens do GitHub Octoverse 2025 (TypeScript, Python, JavaScript, Java, C#) contra o restante: mediana de 912 PRs mescladas contra 646, 50 releases contra 27, e 2 dias desde a última atualização contra 3. Rust (2217) e TypeScript (2091) têm a maior mediana de PRs mescladas entre todas as linguagens, acima até de Python (500), a mais frequente na amostra.
+
+![RQ07: Contribuição, releases e atualização por linguagem](data/Prints/rq07.png)
+
 ### 4.3 Discussão
 
 **RQ01 — hipótese confirmada.** A mediana de ~7,8 anos e a concentração dos cinco repositórios mais antigos (2008-2009) entre os mais populares sustentam a expectativa de que popularidade se acumula ao longo do tempo. Ressalva: existe uma cauda de repositórios recém-criados (o mais novo tem 10 dias de existência), sinal de que picos de interesse pontuais, como lançamentos ligados a IA, também conseguem entrar rapidamente no top 1000, sem esperar anos de exposição.
@@ -150,6 +157,8 @@ Histograma da razão entre issues fechadas e total de issues. Mediana de 87,5%, 
 **RQ05 — hipótese confirmada parcialmente.** Usando o GitHub Octoverse 2025 como referência, Python, TypeScript e JavaScript concentram 51,4% da amostra e ocupam as três primeiras posições também no ranking de referência, confirmando a expectativa central. Mas a ordem interna diverge (Python é 1º na amostra e 2º na referência) e duas linguagens de peso corporativo no Octoverse, Java (4º na referência, 8º na amostra, 4,0%) e C# (5º na referência, 16º na amostra, 0,8%), aparecem bem abaixo do esperado, indício de que popularidade por estrelas no GitHub favorece ecossistemas de scripting, web e IA mais do que linguagens tipicamente usadas em software corporativo fechado.
 
 **RQ06 — hipótese confirmada.** A mediana de 87,5% de issues fechadas é uma taxa alta, sustentando a expectativa de que repositórios populares recebem atenção de manutenção suficiente para resolver a maioria dos problemas relatados. Ressalva dupla: repositórios sem nenhuma issue registrada (4,3%) ficam fora do cálculo, incluindo casos como o `linux`, que desliga deliberadamente o rastreador de Issues do GitHub; e 2,7% da amostra tem razão de exatamente 100%, incluindo repositórios com milhares de issues todas fechadas, o que sugere bots de triagem automática ou política agressiva de fechamento, não necessariamente resolução manual de cada problema.
+
+**RQ07 — hipótese confirmada.** Repositórios em linguagens populares (top 5 do GitHub Octoverse 2025: TypeScript, Python, JavaScript, Java, C#) superam o restante da amostra nas três métricas: mediana de 912 PRs mescladas contra 646 (+41%), 50 releases contra 27 (quase o dobro), e 2 dias desde a última atualização contra 3. A diferença é mais forte em releases e mais fraca em frequência de atualização, onde a mediana geral já é baixa (2-3 dias) pra quase toda a amostra, sobrando pouca margem pra diferença aparecer. Olhando linguagem a linguagem, não só popular vs. resto, o próprio grupo "popular" está longe de ser uniforme: Rust e TypeScript têm mediana de PRs mescladas (2217 e 2091) bem acima até de Python (500), a linguagem mais frequente da amostra. Ressalva: a comparação é uma correlação, não uma relação causal — linguagens do Octoverse também tendem a pertencer a ecossistemas com mais automação de release (ex.: semantic-release, comum no mundo JS/TS), o que pode explicar parte da diferença em RQ03 independentemente da popularidade da linguagem em si.
 
 **Ameaças à validade gerais.** Os dados são um retrato de um único instante (23/08/2026): o ranking de estrelas, a contagem de releases e a razão de issues fechadas mudam continuamente, então uma nova coleta produz números levemente diferentes dos aqui reportados, como já observado entre coletas anteriores do grupo. O teto de 1000 no campo `releases` e os projetos que não usam o fluxo nativo de pull request do GitHub são limitações da própria API, não do método de coleta do grupo. O Octoverse 2025 mede popularidade de linguagem no GitHub como um todo, não especificamente entre os repositórios mais populares, então a comparação da RQ05 é uma aproximação.
 
