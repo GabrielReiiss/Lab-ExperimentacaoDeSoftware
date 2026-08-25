@@ -4,3 +4,5 @@ pytest
 streamlit
 pandas
 plotly
+matplotlib
+numpy

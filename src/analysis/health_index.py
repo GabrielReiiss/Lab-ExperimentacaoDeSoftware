@@ -15,6 +15,7 @@ de penalizar como pior valor possível.
 import pandas as pd
 
 from src.analysis.language_reference import OCTOVERSE_2025_TOP_LANGUAGES
+from src.analysis.normalization import min_max
 
 WEIGHTS = {
     "age_days": 0.20,
@@ -28,14 +29,6 @@ WEIGHTS = {
 # RQ04 é dias desde a última atualização: quanto menor, mais saudável,
 # por isso é invertida antes do min-max.
 INVERTED_METRICS = {"update_frequency_days"}
-
-
-def _min_max(series: pd.Series) -> pd.Series:
-    minimo = series.min()
-    maximo = series.max()
-    if pd.isna(minimo) or maximo == minimo:
-        return pd.Series(float("nan"), index=series.index)
-    return (series - minimo) / (maximo - minimo)
 
 
 def add_health_index(df: pd.DataFrame) -> pd.DataFrame:
@@ -53,7 +46,7 @@ def add_health_index(df: pd.DataFrame) -> pd.DataFrame:
         valores = df[coluna]
         if coluna in INVERTED_METRICS:
             valores = -valores
-        normalizado[coluna] = _min_max(valores)
+        normalizado[coluna] = min_max(valores)
 
     pesos = pd.Series(WEIGHTS)
     disponiveis = normalizado.notna()

@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import streamlit as st
 
 from dashboard.data import CSV_PATH, PAGE_SIZE, TOTAL_REPOSITORIOS, load_repositories
-from dashboard.pages import comparador, dados, exploratorio, snapshots
+from dashboard.pages import comparador, correlacao, dados, exploratorio, snapshots
 from scripts.fetch_repositories import fetch_top_repositories
 from src.export.csv_writer import write_csv
 
@@ -30,6 +30,7 @@ if not CSV_PATH.exists():
 pagina = st.navigation([
     st.Page(exploratorio.render, title="Dashboard Exploratório", url_path="exploratorio"),
     st.Page(comparador.render, title="Comparador Individual", url_path="comparador"),
+    st.Page(correlacao.render, title="Correlação", url_path="correlacao"),
     st.Page(dados.render, title="Dados", url_path="dados"),
     st.Page(snapshots.render, title="Snapshots de Sprint", url_path="snapshots"),
 ])
