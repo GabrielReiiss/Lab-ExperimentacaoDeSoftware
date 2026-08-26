@@ -19,16 +19,34 @@ Este documento é um MODELO válido para qualquer um dos 5 laboratórios da disc
 
 ## 1. Introdução
 
-*ORIENTAÇÃO: Contextualize, em 1-2 parágrafos, o problema geral que motiva este laboratório específico (ex.: falta de evidência controlada sobre o real impacto de assistentes de IA na programação — Lab02; métricas DORA como padrão de mercado para desempenho de entrega — Lab03; o Kanban do próprio grupo como objeto de estudo, em vez de um sistema externo — Lab05). Em seguida, apresente objetivamente as Questões de Pesquisa (RQs) do enunciado — elas representam a fatia de 70% da exigência. Para os laboratórios que pedem explicitamente hipóteses informais antes da coleta (Lab01, Lab03), inclua-as aqui, uma por RQ. Finalize citando, em uma frase por item, as RQs, métricas ou variáveis adicionais que o grupo decidiu propor por conta própria (os 30% de inovação) — o detalhamento delas vem na Metodologia.*
+Repositórios populares no GitHub concentram grande parte da atenção da comunidade open-source: costumam ser referência de qualidade, atraem contribuidores e influenciam práticas adotadas pelo mercado. Apesar disso, o que de fato caracteriza esses repositórios (se são maduros, bem mantidos, concentrados em poucas linguagens, ou geridos com algum rigor de processo) raramente é medido de forma sistemática, ficando mais no campo da percepção do que da evidência. Este trabalho caracteriza empiricamente os 1.000 repositórios open-source mais populares do GitHub por número de estrelas, a partir de dados coletados via API GraphQL do GitHub, para verificar se essas percepções comuns se sustentam nos dados coletados.
 
-**Perguntas que esta seção deve responder ao leitor**
+Essa caracterização importa tanto para a engenharia de software, que ganha evidência sobre práticas associadas a projetos populares (cadência de release, resposta a issues, frequência de atualização), quanto para o próprio grupo, que usa o exercício para praticar coleta de dados em escala via API, tratamento de valores ausentes e outliers, e comunicação de resultados estatísticos.
 
-- Qual problema está sendo investigado, e por que ele importa (para a engenharia de software, para o mercado, ou para o próprio grupo)?
-- Quais são as Questões de Pesquisa do enunciado (numeradas RQ1, RQ2, ...)?
-- Quais as hipóteses informais do grupo para cada RQ, antes de olhar os dados (quando aplicável ao laboratório)?
-- Quais RQs, métricas ou variáveis o grupo está propondo além do enunciado (resumo de 1 linha cada — os 30% de inovação)?
+A caracterização é guiada por sete questões de pesquisa do enunciado, RQ01 a RQ07:
 
-*[conteúdo do grupo — substituir este texto]*
+- **RQ01**: Sistemas populares são maduros/antigos? — métrica: idade do repositório.
+- **RQ02**: Sistemas populares recebem muita contribuição externa? — métrica: total de pull requests mescladas.
+- **RQ03**: Sistemas populares lançam releases com frequência? — métrica: total de releases.
+- **RQ04**: Sistemas populares são atualizados com frequência? — métrica: tempo até a última atualização.
+- **RQ05**: Sistemas populares são escritos nas linguagens mais populares? — métrica: linguagem primária de cada repositório.
+- **RQ06**: Sistemas populares possuem um alto percentual de issues fechadas? — métrica: razão entre issues fechadas e total de issues.
+- **RQ07**: Sistemas escritos nas linguagens mais populares recebem mais contribuição externa, lançam mais releases e são atualizados com mais frequência? — métrica: RQ02, RQ03 e RQ04 agrupadas pela linguagem da RQ05.
+
+**Hipóteses informais**, formuladas pelo grupo antes da análise formal dos dados:
+
+- **RQ01**: esperamos que repositórios populares sejam majoritariamente antigos, já que acumular um número alto de estrelas costuma exigir tempo de exposição e uso contínuo pela comunidade, tornando repositórios muito recentes uma minoria entre os mais populares.
+- **RQ02**: esperamos que repositórios populares recebam contribuição externa significativa, medida pelo número de pull requests mescladas, dado que maior visibilidade tende a atrair mais colaboradores dispostos a propor mudanças.
+- **RQ03**: esperamos que repositórios populares lancem releases com frequência regular, já que projetos com muita visibilidade tendem a ter ciclos de desenvolvimento mais estruturados e cadência de versionamento previsível.
+- **RQ04**: esperamos que repositórios populares sejam atualizados com frequência alta, dado que atraem mais colaboradores e exigem manutenção constante para sustentar a base de usuários.
+- **RQ05**: esperamos que a maioria dos repositórios populares esteja concentrada nas linguagens de propósito geral mais usadas do mercado (ex.: JavaScript/TypeScript, Python, Java), já que essas linguagens têm o maior número de desenvolvedores e ecossistemas mais maduros para projetos open-source de grande escala. Fonte adotada para "linguagens mais populares": GitHub Octoverse 2025, detalhada na seção 2.
+- **RQ06**: esperamos que repositórios populares tenham uma alta taxa de issues fechadas, já que a visibilidade atrai mantenedores e contribuidores que respondem e resolvem problemas relatados com mais agilidade.
+- **RQ07**: esperamos que repositórios escritos nas linguagens mais populares recebam mais contribuição externa, lancem mais releases e sejam atualizados com mais frequência do que os demais, já que ecossistemas de linguagem maiores tendem a atrair mais desenvolvedores e ferramentas de automação de build e release.
+
+**Inovações do grupo (30% da nota)**, detalhadas na Metodologia (seção 3.6):
+
+- Análise de correlação (Pearson e Spearman) entre as seis métricas normalizadas de RQ01-RQ06, para verificar se alguma delas é redundante o suficiente para ser descartada.
+- Índice composto de saúde/maturidade do repositório, combinando as seis métricas normalizadas por média ponderada num único score por repositório.
 
 ## 2. Contexto
 
