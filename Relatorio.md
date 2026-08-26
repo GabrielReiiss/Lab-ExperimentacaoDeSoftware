@@ -25,13 +25,20 @@ Essa caracterização importa tanto para a engenharia de software, que ganha evi
 
 A caracterização é guiada por sete questões de pesquisa do enunciado, RQ01 a RQ07:
 
-- **RQ01**: Sistemas populares são maduros/antigos? — métrica: idade do repositório.
-- **RQ02**: Sistemas populares recebem muita contribuição externa? — métrica: total de pull requests mescladas.
-- **RQ03**: Sistemas populares lançam releases com frequência? — métrica: total de releases.
-- **RQ04**: Sistemas populares são atualizados com frequência? — métrica: tempo até a última atualização.
-- **RQ05**: Sistemas populares são escritos nas linguagens mais populares? — métrica: linguagem primária de cada repositório.
-- **RQ06**: Sistemas populares possuem um alto percentual de issues fechadas? — métrica: razão entre issues fechadas e total de issues.
-- **RQ07**: Sistemas escritos nas linguagens mais populares recebem mais contribuição externa, lançam mais releases e são atualizados com mais frequência? — métrica: RQ02, RQ03 e RQ04 agrupadas pela linguagem da RQ05.
+- **RQ01**: Sistemas populares são maduros/antigos?
+    - métrica: idade do repositório.
+- **RQ02**: Sistemas populares recebem muita contribuição externa?
+    - métrica: total de pull requests mescladas.
+- **RQ03**: Sistemas populares lançam releases com frequência?
+    - métrica: total de releases.
+- **RQ04**: Sistemas populares são atualizados com frequência?
+    - métrica: tempo até a última atualização.
+- **RQ05**: Sistemas populares são escritos nas linguagens mais populares?
+    - métrica: linguagem primária de cada repositório.
+- **RQ06**: Sistemas populares possuem um alto percentual de issues fechadas?
+    - métrica: razão entre issues fechadas e total de issues.
+- **RQ07**: Sistemas escritos nas linguagens mais populares recebem mais contribuição externa, lançam mais releases e são atualizados com mais frequência?
+    - métrica: RQ02, RQ03 e RQ04 agrupadas pela linguagem da RQ05.
 
 **Hipóteses informais**, formuladas pelo grupo antes da análise formal dos dados:
 
