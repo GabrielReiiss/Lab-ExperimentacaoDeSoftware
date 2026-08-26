@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.analysis.health_index import add_health_index
+from src.analysis.health_index import add_health_index, health_index_summary
 
 
 def _sample_df():
@@ -54,3 +54,24 @@ def test_constant_column_does_not_break_normalization():
     resultado = add_health_index(_sample_df())  # releases é constante em todas as linhas
 
     assert resultado["health_index"].notna().all()
+
+
+def test_health_index_summary_computes_median_and_mean():
+    df = add_health_index(_sample_df())
+
+    resumo = health_index_summary(df)
+
+    assert resumo["count"] == 4
+    assert resumo["missing"] == 0
+    assert 0 <= resumo["median"] <= 1
+    assert 0 <= resumo["mean"] <= 1
+
+
+def test_health_index_summary_counts_missing_values():
+    df = add_health_index(_sample_df())
+    df.loc[0, "health_index"] = None
+
+    resumo = health_index_summary(df)
+
+    assert resumo["count"] == 3
+    assert resumo["missing"] == 1

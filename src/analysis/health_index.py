@@ -55,3 +55,15 @@ def add_health_index(df: pd.DataFrame) -> pd.DataFrame:
 
     df["health_index"] = soma_ponderada / peso_total
     return df
+
+
+def health_index_summary(df: pd.DataFrame) -> dict:
+    """Espera `df` já processado por `add_health_index` (coluna "health_index" presente)."""
+    valores = df["health_index"].dropna()
+
+    return {
+        "median": float(valores.median()),
+        "mean": float(valores.mean()),
+        "count": int(valores.count()),
+        "missing": int(df["health_index"].isna().sum()),
+    }

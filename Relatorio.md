@@ -166,7 +166,7 @@ Três gráficos de barras (PRs mescladas, releases e dias desde atualização, c
 
 **Ameaças à validade gerais.** Os dados são um retrato de um único instante (23/08/2026): o ranking de estrelas, a contagem de releases e a razão de issues fechadas mudam continuamente, então uma nova coleta produz números levemente diferentes dos aqui reportados, como já observado entre coletas anteriores do grupo. O teto de 1000 no campo `releases` e os projetos que não usam o fluxo nativo de pull request do GitHub são limitações da própria API, não do método de coleta do grupo. O Octoverse 2025 mede popularidade de linguagem no GitHub como um todo, não especificamente entre os repositórios mais populares, então a comparação da RQ05 é uma aproximação.
 
-As inovações do grupo, detalhadas na seção 3.6, aprofundam esses resultados combinando as seis métricas num índice único de saúde/maturidade por repositório e cruzando-as par a par numa matriz de correlação; a discussão específica de cada uma é apresentada naquela seção e, no caso da correlação, detalhada a seguir em 4.4.
+As inovações do grupo, detalhadas na seção 3.6, aprofundam esses resultados combinando as seis métricas num índice único de saúde/maturidade por repositório e cruzando-as par a par numa matriz de correlação; a discussão específica de cada uma é apresentada naquela seção e, em mais detalhe, a seguir em 4.4 (correlação) e 4.5 (índice de saúde/maturidade).
 
 ### 4.4 Análise de Correlação entre Métricas
 
@@ -205,6 +205,31 @@ PRs aceitas e Releases apresentam correlação positiva fraca a moderada (Pearso
 Atualização recente e razão de issues fechadas apresentam correlação positiva fraca (Pearson r=0,32, Spearman ρ=0,30): repositórios com atualização mais recente tendem a fechar uma fração maior das suas issues, sugerindo que times ativos tratam commits/releases e a fila de issues como parte do mesmo ciclo de manutenção, em vez de tratar um e negligenciar o outro.
 
 **Leitura geral.** Nenhum dos pares da matriz passa de correlação moderada (`|r|` máximo de 0,33 no Pearson), o que reforça que as seis métricas usadas nas RQs do enunciado capturam, em grande parte, dimensões distintas da popularidade/maturidade de um repositório — nenhuma delas é redundante o suficiente para ser descartada em favor de outra. Isso também justifica, a posteriori, a escolha de combiná-las por média ponderada (em vez de descartar alguma por colinearidade) no índice de saúde/maturidade da seção 3.6.
+
+### 4.5 Índice Composto de Saúde/Maturidade
+
+Índice único (0 a 1) combinando as seis métricas normalizadas por min-max por média ponderada, implementado em `src/analysis/health_index.py` e gerado por `python -m scripts.compute_health_index`:
+
+| Métrica | Peso | Justificativa |
+|---|---|---|
+| PRs aceitas | 25% | Maior peso: sinal mais direto de colaboração externa |
+| Idade | 20% | Projeto estabelecido, popularidade sustentada |
+| Releases | 15% | Cadência de versionamento |
+| Atualização recente | 15% | Manutenção ativa (invertida: menos dias desde a última atualização = melhor) |
+| Linguagem popular | 15% | Binário: repositório está ou não no top 5 do GitHub Octoverse 2025 |
+| Issues fechadas | 10% | Menor peso: sinal mais ruidoso, varia muito entre processos de projeto |
+
+Quando falta um dado no repositório (ex.: sem linguagem detectada ou sem issues registradas), a métrica é excluída e os pesos das demais são renormalizados, em vez de penalizar o repositório com o pior valor possível.
+
+![Distribuição do índice de saúde/maturidade](reports/figures/health_index_distribuicao.png)
+
+Mediana de 0,418, média de 0,421, distribuição aproximadamente simétrica em torno da mediana, sem nenhum repositório da amostra ficando sem score.
+
+**Top 5 (maior índice):** `home-assistant/core` (0,905), `elastic/elasticsearch` (0,840), `getsentry/sentry` (0,810), `grafana/grafana` (0,796), `frappe/erpnext` (0,783). São repositórios que pontuam bem nas seis métricas ao mesmo tempo: antigos, com alto volume de PRs mescladas, releases frequentes, atualização recente e linguagem popular.
+
+**Bottom 5 (menor índice):** `facebookresearch/segment-anything` (0,163), `CompVis/stable-diffusion` (0,166), `anthropics/prompt-eng-interactive-tutorial` (0,167), `karpathy/LLM101n` (0,171), `exacity/deeplearningbook-chinese` (0,172). Predominam repositórios de pesquisa ou tutorial de IA publicados uma vez e sem manutenção contínua depois: poucas ou nenhuma release e atualização parada, com o `deeplearningbook-chinese` já citado na RQ04 por mais de 6 anos sem update.
+
+**Leitura geral.** A escolha de combinar as seis métricas por média ponderada, em vez de descartar alguma por redundância, é sustentada pela análise de correlação da seção 4.4: nenhum par de métricas passa de correlação moderada (`|r|` máximo de 0,33), então cada uma contribui com um sinal distinto para o índice em vez de repetir a mesma informação. O peso mais alto (PRs aceitas, 25%) e o mais baixo (issues fechadas, 10%) refletem uma escolha justificada do grupo, não um resultado estatístico; testar o índice com pesos iguais (1/6 cada) como baseline alternativo é uma extensão natural para trabalho futuro.
 
 ## 5. Conclusão
 
