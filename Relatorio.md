@@ -42,51 +42,79 @@ Este documento é um MODELO válido para qualquer um dos 5 laboratórios da disc
 
 ### 3.1 Principais Desafios
 
-*ORIENTAÇÃO: Relate as dificuldades técnicas e metodológicas reais enfrentadas pelo grupo — não uma lista de trivialidades já resolvidas, e sim decisões difíceis de fato. Exemplos típicos, conforme o laboratório: limite de taxa (rate limit) da API do GitHub ao consultar milhares de repositórios ou workflow runs (Lab01/Lab03); paginação de grandes volumes de dados; ausência de histórico de mudança de status consultável via API no GitHub Projects, exigindo snapshots manuais recorrentes (todos os laboratórios); dificuldade de padronizar katas de dificuldade equivalente e evitar memorização de soluções pela IA (Lab02); ambiguidade na definição operacional de uma métrica, como lead time (Lab03); dados incompletos ou repositórios sem GitHub Actions habilitado (Lab03).*
+**Erro 502 dependente do tamanho da página, não do volume total.** A query GraphQL única (RQ01-06) traz, por repositório, campos caros de computar do lado do GitHub: `pullRequests(states: MERGED)`, `releases` e duas contagens de `issues` (`closedIssues`/`totalIssues`). Testamos empiricamente contra a API real: com `first=10` a consulta sempre funcionava; com `first=50` ela falhava com `502 Bad Gateway` de forma consistente, nas 3 tentativas de retry, com a mesma mensagem a cada vez. Isso descartou a hipótese de instabilidade de rede aleatória, o problema era o **custo da consulta por requisição** (o servidor do GitHub expira antes de terminar de computar as contagens de issues pra muitos repositórios de uma vez), não *rate limit* nem falha transiente. A evidência decisiva foi justamente essa: um erro transiente de rede não se repetiria de forma idêntica a cada nova tentativa.
 
-*[conteúdo do grupo — substituir este texto]*
+**Retry sozinho não resolve falha determinística.** A primeira tentativa de correção foi adicionar retry com backoff (3 tentativas) no client. Isso resolveu falhas de rede genuinamente transientes, mas não teve efeito nenhum sobre o 502 de custo, como o motivo da falha não muda entre tentativas, tentar de novo com o mesmo `page_size` simplesmente reproduz o mesmo erro 3 vezes seguidas antes de desistir.
+
+**Esgotamento de conexões TCP/portas na paginação de 1000 repositórios.** A implementação inicial do client abria uma conexão nova a cada chamada (`requests.post(...)` direto, sem reaproveitar socket). Ao paginar rapidamente as dezenas de requisições necessárias pra coletar os 1.000 repositórios, isso esgotava as portas efêmeras disponíveis no sistema operacional, causando falhas de "Failed to establish a new connection" mesmo com token e rede válidos, um problema de recurso do lado do cliente, não da API do GitHub.
+
+**Falha de rede que só aparece em escala grande.** Durante o benchmark de paginação em N=1.000 (ver 3.6/4.6), a coleta quebrou com `ChunkedEncodingError` (conexão cortada no meio do corpo da resposta), um tipo de erro que não havia aparecido nos testes em N=100 nem N=500, nem no desenvolvimento original do client. Nem `run_query` nem `paginate()` tratavam esse erro como transitório, então ele derrubava a coleta inteira em vez de contar como uma falha de página recuperável (como já acontecia com timeout e erro de conexão). Reforça que testar só em volume pequeno não é suficiente para expor todos os modos de falha da API em produção.
+
+**Retry duplicado em duas camadas, sem coordenação.** Antes das correções ao script, a paginação adaptativa era 2-4x mais lenta que a fixa segura (seção 4.6), investigamos a causa em vez de aceitar o número. Diagnóstico instrumentado (`scripts/diagnose_adaptive.py`) mostrou que, pra cada falha que o `paginate()` contava (`falha 1/3`, `2/3`, `3/3`), o `run_query()` já tinha tentado 3x sozinho, 9 requisições HTTP reais pra uma única decisão de encolher o `page_size`. Como requisições que falham demoram mais, em média, que as bem-sucedidas (o gateway do GitHub demora a desistir da query cara), isso dominava o tempo total: 66% de uma execução de N=100 era gasto em requisições que falhavam.
+
+*(fonte: commits `ae4becc` e `38ca65d` do repositório do grupo; benchmark e diagnóstico em `docs/benchmark_pagination.md`)*
 
 ### 3.2 Tomadas de Decisão
 
-*ORIENTAÇÃO: Documente as decisões metodológicas do grupo e o raciocínio (trade-off) por trás de cada uma — não apenas a escolha final. Exemplos que os enunciados pedem explicitamente: o limite de WIP definido para a coluna Doing e sua justificativa (obrigatório em todo laboratório); qual assistente de IA foi usado e por quê, e como se garantiu o mesmo tratamento em todos os trials (Lab02); qual definição operacional de métrica foi adotada quando o enunciado permite variação, mantendo-a consistente para toda a amostra (ex.: lead time no Lab03); critério de inclusão/exclusão de repositórios na amostra; linguagem de programação escolhida em função da ferramenta de métricas estáticas disponível (CK exige Java; Radon para Python).*
+**Reaproveitar uma única `requests.Session()` em vez de abrir uma conexão por chamada.** Trade-off: um pouco mais de estado global no módulo do client, em troca de eliminar o esgotamento de portas TCP descrito em 3.1, a sessão faz *connection pooling*/*keep-alive*, reaproveitando os mesmos sockets entre requisições em vez de abrir e derrubar um por chamada.
 
-*[conteúdo do grupo — substituir este texto]*
+**`page_size` adaptativo em vez de um valor fixo "seguro".** Em vez de simplesmente fixar um `page_size` pequeno o bastante pra nunca dar 502 (o que deixaria a coleta de 1.000 repositórios desnecessariamente lenta o tempo todo), o `paginate()` ajusta o tamanho da página durante a própria execução: cresce +5 repositórios por página após 3 páginas seguidas bem-sucedidas (até o teto de 100 imposto pela API), e encolhe -5 após 3 falhas seguidas (mínimo de 5). O valor que causou a última sequência de falhas vira um "teto" temporário, pra evitar ficar oscilando entre crescer e cair de volta no mesmo valor ruim (*flapping*), esse teto é perdoado depois de algumas rodadas estáveis, permitindo tentar crescer de novo caso a instabilidade do lado do servidor tenha passado. Trade-off: mais complexidade no client em troca de não precisar escolher manualmente, por tentativa e erro, um `page_size` fixo pra cada volume de coleta.
+
+**Retry limitado a erros claramente transitórios e removido de onde não ajudava.** O client tenta de novo (3x, com backoff) em timeout, erro de conexão, conexão cortada no meio da resposta e corpo de resposta JSON inválido, não em erros de query (`GraphQLError`) nem em erros de autenticação, decisão deliberada pra não mascarar um erro de configuração atrás de retries. **502/503/504 foram removidos do retry do `run_query()`** depois do diagnóstico descrito em 3.1: como esse erro é determinístico por custo de consulta, retentar a mesma requisição sem mudar nada não resolve, só quem sabe *o que* mudar (o `paginate()`, reduzindo o `page_size`) deveria reagir a ele. Medido: essa remoção sozinha cortou o tempo da paginação adaptativa pela metade (de ~4x pra ~2x mais lenta que a fixa segura, em N=100 — ver `docs/benchmark_pagination.md`).
+
+**Mesmo padrão de desperdício, encontrado de novo uma camada acima.** O `paginate()` exigia 3 falhas seguidas no mesmo `page_size` antes de encolher (`FAILURE_STREAK_TO_SHRINK=3`), a mesma lógica de "confirmar antes de agir" que já tínhamos corrigido no `run_query()`, só que agora dentro do próprio `paginate()`. Reduzido pra 1 falha. Medido (N=100, 2 execuções de confirmação): média de ~26% mais rápido (93,9s → 69,1s). Amostra pequena (2 execuções), mas nas duas direções o resultado foi consistente, ver `docs/benchmark_pagination.md` pra números e a ressalva completa.
+
+**Critério de amostragem: `stars:>1 sort:stars-desc`.** Excluímos repositórios com 0 ou 1 estrela (ruído/lixo no ranking) e ordenamos de forma decrescente por estrelas, garantindo que a amostra coletada corresponda de fato aos repositórios mais populares, e não a uma amostra aleatória dentro do universo de busca.
+
+**Limite de WIP da coluna Doing: 3** (uma Issue por integrante do trio). Justificativa: com um limite igual ao número de integrantes, cada pessoa mantém no máximo uma tarefa em andamento por vez, o que facilita controlar o fluxo de Issues sendo movidas de Doing para Review, evitando que várias tarefas fiquem abertas em paralelo pela mesma pessoa sem terminar nenhuma, e torna imediato perceber quando alguém está com a coluna "cheia" e precisa finalizar ou revisar antes de puxar a próxima.
 
 ### 3.3 Etapas
 
-*ORIENTAÇÃO: Descreva o processo de desenvolvimento em sprints, seguindo a estrutura do enunciado (ex.: Lab0XS01, S02, S03 + Relatório Final), com o que foi efetivamente entregue em cada uma e quem (qual integrante) foi responsável por qual parte — a correção do professor é feita a partir do board (GitHub Projects), então a divisão aqui deve refletir os Assignees reais das Issues, não uma divisão apenas narrativa. Inclua também a subseção "Configuração do processo" exigida em todos os laboratórios: as colunas do board (mínimo Backlog → To Do → Doing → Review → Done), a política de limite de WIP em uso, e uma captura de tela (print) do board ao final do laboratório, mostrando o fluxo real de trabalho do grupo.*
+| Sprint | Entregas | Responsável(is) | Issues (nº) |
+|---|---|---|---|
+| **Lab01S01** | Arquitetura base do client GraphQL; consulta unificada RQ01-06 para 100 repositórios; script único de consulta do grupo; padronização da estrutura de código | Felipe Pereira, Arthur Panzera, Gabriel Reis | #1 #2 #3 #4 #5 #6 #7 #8 #15 |
+| **Lab01S02** | Paginação adaptativa para 1.000 repositórios; exportação em CSV; validação + hipótese informal por RQ; primeiro snapshot de sprint; arquitetura e primeira versão do dashboard Streamlit; comparador individual vs. população | Felipe Pereira, Arthur Panzera, Gabriel Reis | #19 #20 #21 #22 #23 #24 #25 #29 #30 #31 |
+| **Lab01S03** | Análise e gráficos por RQ (RQ01/02, RQ03/04, RQ05/06, RQ07); segundo snapshot de sprint; inovações (correlação entre métricas, índice composto) | Felipe Pereira, Arthur Panzera, Gabriel Reis | #33 #34 #43 #44 #45 #46 #47 |
+| **Relatório Final** | Elaboração do documento final (metodologia, resultados por RQ, discussão, configuração do processo, revisão) | Felipe Pereira, Arthur Panzera, Gabriel Reis | #49 #50 #51 #52 #53 #54 |
 
-[Tabela ou linha do tempo com Sprint | Entregas | Responsável(is) | Issues (nº)]
+#### Configuração do processo
 
-> Sugestão: insira aqui o print do quadro Kanban (GitHub Projects) mencionado na orientação acima.
+- **Colunas do board:** `[confirmar - mínimo Backlog → To Do → Doing → Review → Done]`
+- **Limite de WIP (coluna Doing):** 3 - uma Issue por integrante do trio, controlando o fluxo de Doing para Review (ver justificativa completa em 3.2)
+- **Print do board:** `[inserir captura de tela do board ao final do Lab01, mostrando o fluxo real de trabalho]`
 
 ### 3.4 Ferramentas
 
-*ORIENTAÇÃO: Liste as ferramentas usadas na coleta, processamento e análise de dados — sejam específicas (nome e versão quando relevante), não genéricas. Exemplos conforme o laboratório: GraphQL e/ou REST API do GitHub para mineração (Lab01/Lab03 — bibliotecas de terceiros para consulta à API não são permitidas, o script deve ser próprio do grupo); Python/Pandas para manipulação de dados; Matplotlib/Seaborn ou Plotly/Dash/Streamlit para visualização; CK, PMD ou Radon para métricas estáticas de código (Lab02); testes estatísticos como o de Wilcoxon para amostras pareadas (Lab02); ferramenta de BI (Power BI, Tableau, Looker Studio) caso o grupo não opte pelo dashboard em código (Lab04). Inclua também a ferramenta de processo, obrigatória em todos os laboratórios: GitHub Projects (v2), com o link do repositório/board do grupo.*
-
-*[conteúdo do grupo — substituir este texto]*
+| Etapa | Ferramenta |
+|---|---|
+| Mineração de dados | API GraphQL do GitHub, consumida por um client próprio do grupo (`src/github_client/`) construído sobre `requests`, sem bibliotecas de terceiros que abstraem a API |
+| Manipulação/análise de dados | Python 3.12, Pandas |
+| Visualização/dashboard | Plotly (gráficos), Streamlit (dashboard interativo com múltiplas páginas) |
+| Exportação de dados | CSV (`src/export/csv_writer.py`) |
+| Testes automatizados | pytest |
+| Processo | GitHub Projects (v2) - link do repositório na tabela do cabeçalho deste documento |
 
 ### 3.5 Tabela de Métricas
 
-*ORIENTAÇÃO: Construa uma tabela relacionando cada Questão de Pesquisa à métrica correspondente, sua definição operacional exata (a fórmula ou regra de cálculo — não basta o nome) e a ferramenta/fonte usada para coletá-la. Isso é o que garante que o laboratório seja reprodutível por outro grupo. A primeira linha abaixo é um exemplo ilustrativo (baseado no Lab01); substitua pelas RQs e métricas do seu laboratório.*
-
 | RQ | Métrica | Definição Operacional | Unidade | Ferramenta / Fonte |
 |---|---|---|---|---|
-| *RQ01 (exemplo)* | *Idade do repositório* | *Data atual − data de criação do repositório* | *Dias* | *Script GraphQL (API do GitHub)* |
-| | | | | |
-| | | | | |
-| | | | | |
-| | | | | |
+| RQ01 | Idade do repositório | Data atual − `createdAt` do repositório | Dias | Script GraphQL próprio (API do GitHub) |
+| RQ02 | Contribuição externa | `pullRequests(states: MERGED).totalCount` | PRs mescladas | Script GraphQL próprio (API do GitHub) |
+| RQ03 | Frequência de releases | `releases.totalCount` | Releases | Script GraphQL próprio (API do GitHub) |
+| RQ04 | Frequência de atualização | Data atual − `pushedAt` (último push) | Dias | Script GraphQL próprio (API do GitHub) |
+| RQ05 | Linguagem primária | `primaryLanguage.name`, comparada ao ranking do GitHub Octoverse 2025 | Categórica | Script GraphQL próprio + GitHub Octoverse 2025 |
+| RQ06 | Percentual de issues fechadas | `issues(states: CLOSED).totalCount / issues.totalCount` | Razão (0-1) | Script GraphQL próprio (API do GitHub) |
+| RQ07 | Contribuição/releases/atualização por linguagem | RQ02, RQ03 e RQ04 agrupadas por `primaryLanguage` | Agregado por categoria | Pandas (groupby sobre o CSV coletado) |
 
 ### 3.6 Inovações Propostas pelo Grupo (30% da nota)
 
-*ORIENTAÇÃO: O enunciado do laboratório corresponde a 70% da exigência da disciplina. Os outros 30% dependem de uma contribuição original do grupo, que deve estar claramente identificada aqui — não diluída no restante do texto — para facilitar a correção. Escolha uma ou mais frentes de inovação, entre: (a) uma nova Questão de Pesquisa, além das do enunciado; (b) uma métrica ou variável adicional, não pedida no enunciado; (c) uma mudança de arquitetura/ferramenta de coleta (ex.: paralelizar a coleta, usar cache, trocar de biblioteca de visualização); (d) uma metodologia alternativa ou complementar (ex.: um teste estatístico adicional, uma segmentação diferente da amostra, uma técnica de controle de ameaça à validade não exigida pelo enunciado). Para cada inovação escolhida, explique o que foi feito, por que o grupo considerou relevante, e onde o resultado dela aparece nas seções de Resultados/Discussão e na Conclusão — inovação sem resultado discutido não conta como contribuição efetiva.*
+**Paginação adaptativa em vez de arquitetura de coleta fixa.** Detalhada em 3.1/3.2: o `page_size` cresce/encolhe automaticamente com base em sequências de sucesso/falha da API, em vez de um valor fixo escolhido por tentativa e erro. Além disso foi feito um benchmark comparando com page_size fixo, incluindo diagnóstico, correções de retry duplicado e um teste além do teto de 1.000 via particionamento por faixas de estrelas (`scripts/experimental/collect_beyond_1000.py`, fora do pipeline de produção). Resultados em 4.6 e detalhamento completo em `docs/benchmark_pagination.md`.
 
-*[conteúdo do grupo — substituir este texto]*
+**Análise de correlação entre as métricas (`src/analysis/correlation.py`, `scripts/compute_correlations.py`).** Correlação de Pearson e Spearman entre as 6 métricas normalizadas (min-max), vai além do que o enunciado pede (que trata cada RQ isoladamente) e investiga se as métricas se movem juntas (ex.: repositórios com mais PRs também têm releases mais frequentes?). Resultado e interpretação discutidos em 4.4.
 
-**Índice composto de saúde/maturidade do repositório.** As seis RQs do enunciado respondem, cada uma isoladamente, "esse repositório é antigo?", "recebe muita contribuição?", "libera releases com frequência?", mas nenhuma delas diz, sozinha, se um repositório é *no geral* saudável e maduro. Essa inovação existe para preencher essa lacuna: resume as seis métricas num único score de 0 a 1 por repositório, permitindo comparar e ranquear os repositórios da amostra por uma nota geral de maturidade, em vez de olhar métrica por métrica (`src/analysis/health_index.py`, `scripts/compute_health_index.py`). O score é uma média ponderada das seis métricas, cada uma antes normalizada por min-max (0 a 1); os pesos refletem o quanto cada métrica sinaliza saúde/maturidade de forma direta e pouco ruidosa: PRs aceitas (25%, sinal mais direto de colaboração externa), idade (20%), releases (15%), atualização recente (15%), linguagem popular (15%) e razão de issues fechadas (10%, menor peso por variar muito entre processos de projeto). `update_frequency_days` entra invertida antes da normalização, para que "atualizado há pouco tempo" pese a favor do score, e não contra.
+**Índice composto de saúde/maturidade do repositório (`src/analysis/health_index.py`, `scripts/compute_health_index.py`).** Combina as 6 métricas normalizadas num score único de 0 a 1, por média ponderada (PRs aceitas com maior peso por ser o sinal mais direto de colaboração externa; issues fechadas com menor peso por variar muito entre processos de projeto), permitindo ranquear os repositórios por maturidade geral em vez de métrica por métrica. Resultado discutido em 4.3.
 
-**Análise de correlação entre as métricas.** O grupo calculou a matriz de correlação (Pearson e Spearman) entre as seis métricas normalizadas por min-max (idade, PRs aceitas, releases, tempo desde a última atualização, razão de issues fechadas e linguagem popular), implementada em `src/analysis/correlation.py` e `scripts/compute_correlations.py`. Além da matriz completa, o script reporta explicitamente os quatro pares indicados como prioritários (idade × releases, idade × razão de issues fechadas, PRs aceitas × releases, tempo desde update × razão de issues fechadas) e gera um scatterplot com linha de tendência para todo par, entre os 15 possíveis, com `|r| de Pearson| > 0,3`. O objetivo é verificar se as métricas usadas nas RQs do enunciado, tratadas de forma isolada, escondem relações entre si que ajudem a explicar os resultados da seção 4.3, os resultados e a interpretação de cada par relevante estão na seção 4.4.
+**Comparador individual vs. população (dashboard).** Permite posicionar um repositório específico em percentil, em cada uma das 6 métricas, em relação aos outros 999 da amostra, uma forma alternativa de apresentar os mesmos dados, focada em leitura individual em vez de agregada.
 
 ## 4. Resultados
 
@@ -183,20 +211,20 @@ Matriz de correlação de Pearson entre as seis métricas normalizadas por min-m
 
 A matriz de Spearman segue o mesmo formato; os valores usados no texto abaixo vêm dela quando divergem do Pearson.
 
-**Pares solicitados pela issue #33:**
+**Pares de análise:**
 
-- **Idade × Releases**: r=0,04, ρ=0,06 — correlação praticamente nula. Repositórios mais antigos não lançam sistematicamente mais releases: idade sozinha não é um bom preditor de cadência de versionamento (consistente com a ressalva da RQ03, onde 29,4% da amostra nunca lança release, independente de quanto tempo existe).
-- **Idade × Razão de issues fechadas**: r=0,24, ρ=0,24 — correlação positiva fraca. Repositórios mais antigos tendem a ter uma razão de issues fechadas um pouco maior, possivelmente por terem tido mais tempo para amadurecer processo de triagem, mas o efeito é pequeno demais para ser a explicação principal da alta mediana observada na RQ06 (87,5%).
-- **PRs aceitas × Releases**: r=0,33, ρ=0,59 — correlação positiva fraca a moderada, com divergência relevante entre os dois coeficientes. A diferença indica que a relação é mais monotônica do que linear (esperado, já que ambas as métricas têm distribuição bastante assimétrica, com poucos repositórios concentrando valores muito altos): projetos que recebem mais contribuição externa mesclada tendem a lançar mais releases, mas não numa proporção constante.
-- **Atualização recente × Razão de issues fechadas**: r=0,32, ρ=0,30 — correlação positiva fraca. Como a métrica de atualização foi invertida (valor alto = atualização mais recente), o resultado indica que repositórios atualizados mais recentemente tendem a fechar uma fração maior de suas issues — coerente com a ideia de manutenção ativa incluir também o fechamento de issues, não só commits/releases.
+- **Idade × Releases**: r=0,04, ρ=0,06 - correlação praticamente nula. Repositórios mais antigos não lançam sistematicamente mais releases: idade sozinha não é um bom preditor de cadência de versionamento (consistente com a ressalva da RQ03, onde 29,4% da amostra nunca lança release, independente de quanto tempo existe).
+- **Idade × Razão de issues fechadas**: r=0,24, ρ=0,24 - correlação positiva fraca. Repositórios mais antigos tendem a ter uma razão de issues fechadas um pouco maior, possivelmente por terem tido mais tempo para amadurecer processo de triagem, mas o efeito é pequeno demais para ser a explicação principal da alta mediana observada na RQ06 (87,5%).
+- **PRs aceitas × Releases**: r=0,33, ρ=0,59 - correlação positiva fraca a moderada, com divergência relevante entre os dois coeficientes. A diferença indica que a relação é mais monotônica do que linear (esperado, já que ambas as métricas têm distribuição bastante assimétrica, com poucos repositórios concentrando valores muito altos): projetos que recebem mais contribuição externa mesclada tendem a lançar mais releases, mas não numa proporção constante.
+- **Atualização recente × Razão de issues fechadas**: r=0,32, ρ=0,30 - correlação positiva fraca. Como a métrica de atualização foi invertida (valor alto = atualização mais recente), o resultado indica que repositórios atualizados mais recentemente tendem a fechar uma fração maior de suas issues, coerente com a ideia de manutenção ativa incluir também o fechamento de issues, não só commits/releases.
 
-**Pares com `|r|` de Pearson `> 0,3`** (os dois únicos entre os 15 possíveis; scatterplots gerados por `scripts/compute_correlations.py` em `reports/figures/`):
+**Pares com `|r|` de Pearson `> 0,3`** (força da correlação, ignorando o sinal; acima de 0,3 é o limiar convencional pra relação forte o bastante pra destacar), só 2 dos 15 pares possíveis passaram desse corte (scatterplots gerados por `scripts/compute_correlations.py` em `reports/figures/`):
 
 **PRs aceitas × Releases**
 
 ![Correlação entre PRs aceitas e Releases](reports/figures/corr_merged_pull_requests_x_releases.png)
 
-PRs aceitas e Releases apresentam correlação positiva fraca a moderada (Pearson r=0,33, Spearman ρ=0,59): colaboração externa e cadência de release andam juntas na amostra, mas de forma não estritamente linear — a maior parte dos repositórios se concentra em valores normalizados baixos de ambas as métricas, com uma cauda de poucos projetos muito ativos em ambas.
+PRs aceitas e Releases apresentam correlação positiva fraca a moderada (Pearson r=0,33, Spearman ρ=0,59): colaboração externa e cadência de release andam juntas na amostra, mas de forma não estritamente linear, a maior parte dos repositórios se concentra em valores normalizados baixos de ambas as métricas, com uma cauda de poucos projetos muito ativos em ambas.
 
 **Atualização recente × Razão de issues fechadas**
 
@@ -204,7 +232,7 @@ PRs aceitas e Releases apresentam correlação positiva fraca a moderada (Pearso
 
 Atualização recente e razão de issues fechadas apresentam correlação positiva fraca (Pearson r=0,32, Spearman ρ=0,30): repositórios com atualização mais recente tendem a fechar uma fração maior das suas issues, sugerindo que times ativos tratam commits/releases e a fila de issues como parte do mesmo ciclo de manutenção, em vez de tratar um e negligenciar o outro.
 
-**Leitura geral.** Nenhum dos pares da matriz passa de correlação moderada (`|r|` máximo de 0,33 no Pearson), o que reforça que as seis métricas usadas nas RQs do enunciado capturam, em grande parte, dimensões distintas da popularidade/maturidade de um repositório — nenhuma delas é redundante o suficiente para ser descartada em favor de outra. Isso também justifica, a posteriori, a escolha de combiná-las por média ponderada (em vez de descartar alguma por colinearidade) no índice de saúde/maturidade da seção 3.6.
+**Leitura geral.** Nenhum dos pares da matriz passa de correlação moderada (`|r|` máximo de 0,33 no Pearson), o que reforça que as seis métricas usadas nas RQs do enunciado capturam, em grande parte, dimensões distintas da popularidade/maturidade de um repositório, nenhuma delas é redundante o suficiente para ser descartada em favor de outra. Isso também justifica, a escolha de combiná-las por média ponderada no índice de saúde/maturidade da seção 3.6.
 
 ### 4.5 Índice Composto de Saúde/Maturidade
 
@@ -230,6 +258,31 @@ Mediana de 0,418, média de 0,421, distribuição aproximadamente simétrica em 
 **Bottom 5 (menor índice):** `facebookresearch/segment-anything` (0,163), `CompVis/stable-diffusion` (0,166), `anthropics/prompt-eng-interactive-tutorial` (0,167), `karpathy/LLM101n` (0,171), `exacity/deeplearningbook-chinese` (0,172). Predominam repositórios de pesquisa ou tutorial de IA publicados uma vez e sem manutenção contínua depois: poucas ou nenhuma release e atualização parada, com o `deeplearningbook-chinese` já citado na RQ04 por mais de 6 anos sem update.
 
 **Leitura geral.** A escolha de combinar as seis métricas por média ponderada, em vez de descartar alguma por redundância, é sustentada pela análise de correlação da seção 4.4: nenhum par de métricas passa de correlação moderada (`|r|` máximo de 0,33), então cada uma contribui com um sinal distinto para o índice em vez de repetir a mesma informação. O peso mais alto (PRs aceitas, 25%) e o mais baixo (issues fechadas, 10%) refletem uma escolha justificada do grupo, não um resultado estatístico; testar o índice com pesos iguais (1/6 cada) como baseline alternativo é uma extensão natural para trabalho futuro.
+
+### 4.6 Benchmark da Paginação Adaptativa
+
+**Benchmark da paginação adaptativa (inovação, seção 3.6).** Comparamos a estratégia adaptativa contra a estratégia de `page_size` fixo de 10, metodologia completa em `docs/benchmark_pagination.md`.
+
+| N | Adaptativa | Fixa (10) | Razão |
+|---|---|---|---|
+| 100 | 61,0 s | 46,5 s | 1,31x |
+| 500 | 258,8 s | 232,9 s | 1,11x |
+| 1.000 | 478,2 s | 460,7 s | **1,038x** |
+
+Na escala real da coleta oficial (N=1.000), a adaptativa é só ~4% mais lenta que a fixa, diferença pequena o bastante pra não ser o critério decisivo por si só.
+
+**Teste além do teto de 1.000.** A API de busca do GitHub limita cada consulta a ~1.000 resultados acessíveis via paginação, não importa a estratégia, confirmado empiricamente. Pra testar volumes maiores, implementamos um script secundário (`scripts/experimental/collect_beyond_1000.py`, fora do pipeline de produção) que particiona a busca em faixas de `stars:` que não se sobrepõem, cada uma abaixo do teto, e soma os resultados. No topo do ranking, N=2.700 (3 faixas) manteve a mesma proporção da tabela acima: **1,05x**, confirma que o resultado se sustenta bem além de 1.000.
+
+**Correlação com a popularidade dos repositórios.** Hipótese testada: repositórios com menos estrelas tendem a ser menos complexos (menos PRs/issues pra computar), então o algoritmo adaptativo deveria performar melhor neles, crescendo o `page_size` além do que é seguro no topo do ranking. Usando o mesmo script pra pular direto pra faixas de estrelas mais baixas, medimos a razão em 4 tetos (abaixo de ~250 a densidade de repositórios por valor de estrela já ultrapassa o que dá pra particionar com segurança):
+
+| Teto de estrelas | Adaptativa | Fixa (10) | Razão |
+|---|---|---|---|
+| 500 | 604,3 s | 633,1 s | 0,95x |
+| 400 | 489,7 s | 557,0 s | 0,88x |
+| 300 | 551,3 s | 603,1 s | 0,914x |
+| 250 | 597,8 s | 648,1 s | 0,92x |
+
+**Hipótese confirmada, com ressalva.** Nas quatro medições, a adaptativa **venceu** a fixa, o oposto do topo do ranking. A relação não é uma reta contínua ("quanto menos popular, sempre melhor"); parece mais um degrau: acima de ~500 estrelas a fixa empata ou vence, abaixo disso a adaptativa vence por uma margem relativamente estável (~5-12%). Confirma que a escolha entre as duas estratégias depende da população de repositórios sendo consultada, não é uma resposta universal.
 
 ## 5. Conclusão
 
