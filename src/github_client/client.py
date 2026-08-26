@@ -18,7 +18,11 @@ REQUEST_TIMEOUT_SECONDS = 15  # tempo máximo esperando resposta antes de desist
 RETRYABLE_STATUS_CODES = {502, 503, 504}
 
 # Erros de rede 
-RETRYABLE_NETWORK_ERRORS = (requests.exceptions.Timeout, requests.exceptions.ConnectionError)
+RETRYABLE_NETWORK_ERRORS = (
+    requests.exceptions.Timeout,
+    requests.exceptions.ConnectionError,
+    requests.exceptions.ChunkedEncodingError,
+)
 
 # Sessão HTTP reaproveitada entre todas as chamadas.
 _session = requests.Session()
@@ -31,12 +35,10 @@ def run_query(query: str, variables: dict = None) -> dict:
     Retorna o conteúdo de `data` já "desembrulhado". Levanta GraphQLError
     se a resposta trouxer a chave "errors".
 
-    Tenta de novo até MAX_ATTEMPTS vezes se a API responder com um erro
-    5xx transiente (502/503/504), se a requisição travar/der timeout
-    (REQUEST_TIMEOUT_SECONDS), ou se o corpo da resposta vier vazio/inválido
-    (glitch passageiro do gateway do GitHub). Se esgotar as tentativas,
-    propaga a exceção (HTTPError, exceção de rede do requests, ou
-    JSONDecodeError) para quem chamou.
+    Tenta de novo até MAX_ATTEMPTS vezes se a requisição travar/der
+    timeout (REQUEST_TIMEOUT_SECONDS), se a conexão cair no meio da
+    resposta, ou se o corpo vier vazio/inválido, falhas genuinamente
+    transientes, que uma segunda tentativa idêntica pode resolver.
     """
     body = {"query": query}
     if variables is not None:
@@ -57,14 +59,11 @@ def run_query(query: str, variables: dict = None) -> dict:
             raise
 
         if response.status_code in RETRYABLE_STATUS_CODES:
-            last_error = requests.exceptions.HTTPError(
-                f"{response.status_code} {response.reason} (tentativa {attempt}/{MAX_ATTEMPTS})",
+            # Sem retry aqui de propósito
+            raise requests.exceptions.HTTPError(
+                f"{response.status_code} {response.reason}",
                 response=response,
             )
-            if attempt < MAX_ATTEMPTS:
-                time.sleep(RETRY_DELAY_SECONDS * attempt)
-                continue
-            raise last_error
 
         response.raise_for_status()
 
