@@ -23,32 +23,31 @@ class FakeResponse:
         if self.status_code >= 400:
             raise requests.exceptions.HTTPError(f"{self.status_code} {self.reason}")
 
-def test_run_query_retries_on_502_and_succeeds(monkeypatch):
-    responses = iter(
-        [
-            FakeResponse(502, reason="Bad Gateway"),
-            FakeResponse(502, reason="Bad Gateway"),
-            FakeResponse(200, {"data": {"viewer": {"login": "felipeaps46"}}}),
-        ]
-    )
-    monkeypatch.setattr(client._session, "post", lambda *a, **k: next(responses))
-    monkeypatch.setattr(client.time, "sleep", lambda seconds: None)
+def test_run_query_raises_immediately_on_502_without_retrying(monkeypatch):
+    """
+    502/503/504 são determinísticos por custo de consulta (ver
+    docs/benchmark_pagination.md),run_query NÃO retenta esse caso de
+    propósito, porque o diagnóstico mostrou que os dois retries
+    empilhados (aqui + em paginate()) multiplicavam o tempo perdido em
+    page_sizes ruins sem nenhum ganho. Quem sabe *o que* mudar diante
+    desse erro (paginate(), reduzindo o page_size) é quem deve tratar
+    o HTTPError e decidir como tentar de novo.
+    """
+    call_count = {"n": 0}
 
-    data = client.run_query("{ viewer { login } }")
+    def fake_post(*args, **kwargs):
+        call_count["n"] += 1
+        return FakeResponse(502, reason="Bad Gateway")
 
-    assert data == {"viewer": {"login": "felipeaps46"}}
-
-def test_run_query_raises_after_max_attempts(monkeypatch):
-    monkeypatch.setattr(
-        client._session, "post", lambda *a, **k: FakeResponse(502, reason="Bad Gateway")
-    )
-    monkeypatch.setattr(client.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(client._session, "post", fake_post)
 
     try:
         client.run_query("{ viewer { login } }")
         assert False, "deveria ter levantado HTTPError"
     except requests.exceptions.HTTPError:
         pass
+
+    assert call_count["n"] == 1 
 
 def test_run_query_does_not_retry_on_graphql_error(monkeypatch):
     call_count = {"n": 0}
@@ -75,6 +74,32 @@ def test_run_query_retries_on_invalid_json_body_and_succeeds(monkeypatch):
         ]
     )
     monkeypatch.setattr(client._session, "post", lambda *a, **k: next(responses))
+    monkeypatch.setattr(client.time, "sleep", lambda seconds: None)
+
+    data = client.run_query("{ viewer { login } }")
+
+    assert data == {"viewer": {"login": "felipeaps46"}}
+
+def test_run_query_retries_on_chunked_encoding_error_and_succeeds(monkeypatch):
+    """
+    Reproduz o crash real visto na coleta de N=1000: a conexão é cortada
+    no meio do corpo da resposta (ChunkedEncodingError), não coberto
+    pelo tuple original de erros de rede retentáveis.
+    """
+    responses = iter(
+        [
+            requests.exceptions.ChunkedEncodingError("Connection broken"),
+            FakeResponse(200, {"data": {"viewer": {"login": "felipeaps46"}}}),
+        ]
+    )
+
+    def fake_post(*args, **kwargs):
+        next_response = next(responses)
+        if isinstance(next_response, Exception):
+            raise next_response
+        return next_response
+
+    monkeypatch.setattr(client._session, "post", fake_post)
     monkeypatch.setattr(client.time, "sleep", lambda seconds: None)
 
     data = client.run_query("{ viewer { login } }")
