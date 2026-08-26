@@ -1,8 +1,6 @@
 # Relatório de Laboratório
 
-*Laboratório de Experimentação de Software — Modelo/Template de Relatório*
-
-Este documento é um MODELO válido para qualquer um dos 5 laboratórios da disciplina (Lab01 a Lab05). Os parágrafos em itálico cinza/verde, iniciados por "ORIENTAÇÃO", explicam o que cada subseção deve conter — apague-os e escreva o conteúdo real do grupo no lugar. Textos entre colchetes [assim] indicam onde inserir informação específica do seu grupo/laboratório.
+*Laboratório de Experimentação de Software 1 — Relatório*
 
 | | |
 |---|---|
@@ -50,10 +48,12 @@ A caracterização é guiada por sete questões de pesquisa do enunciado, RQ01 a
 - **RQ06**: esperamos que repositórios populares tenham uma alta taxa de issues fechadas, já que a visibilidade atrai mantenedores e contribuidores que respondem e resolvem problemas relatados com mais agilidade.
 - **RQ07**: esperamos que repositórios escritos nas linguagens mais populares recebam mais contribuição externa, lancem mais releases e sejam atualizados com mais frequência do que os demais, já que ecossistemas de linguagem maiores tendem a atrair mais desenvolvedores e ferramentas de automação de build e release.
 
-**Inovações do grupo (30% da nota)**, detalhadas na Metodologia (seção 3.6):
+**Inovações do grupo**, detalhadas na Metodologia (seção 3.6):
 
+- Paginação adaptativa do client de coleta, que cresce ou encolhe o `page_size` automaticamente conforme sequências de sucesso/falha da API, em vez de um valor fixo escolhido por tentativa e erro, com benchmark comparando as duas estratégias em diferentes volumes e faixas de popularidade.
 - Análise de correlação (Pearson e Spearman) entre as seis métricas normalizadas de RQ01-RQ06, para verificar se alguma delas é redundante o suficiente para ser descartada.
 - Índice composto de saúde/maturidade do repositório, combinando as seis métricas normalizadas por média ponderada num único score por repositório.
+- Comparador individual vs. população no dashboard, que posiciona um repositório específico em percentil, em cada uma das seis métricas, em relação aos demais 999 da amostra.
 
 ## 2. Contexto
 
@@ -62,8 +62,6 @@ A caracterização é guiada por sete questões de pesquisa do enunciado, RQ01 a
 *[conteúdo do grupo — substituir este texto]*
 
 ## 3. Metodologia
-
-*ORIENTAÇÃO: Esta é a seção mais longa do relatório e a que mais evidencia o trabalho real do grupo. Ela tem seis subseções — as cinco primeiras cobrem principalmente os 70% do enunciado; a última (Inovações) é onde os 30% de contribuição própria do grupo devem ficar explícitos e fáceis de identificar na correção.*
 
 ### 3.1 Principais Desafios
 
@@ -95,16 +93,24 @@ A caracterização é guiada por sete questões de pesquisa do enunciado, RQ01 a
 
 ### 3.3 Etapas
 
-| Sprint | Entregas | Responsável(is) | Issues (nº) |
+| Sprint | Entregas | Responsável | Issues (nº) |
 |---|---|---|---|
-| **Lab01S01** | Arquitetura base do client GraphQL; consulta unificada RQ01-06 para 100 repositórios; script único de consulta do grupo; padronização da estrutura de código | Felipe Pereira, Arthur Panzera, Gabriel Reis | #1 #2 #3 #4 #5 #6 #7 #8 #15 |
-| **Lab01S02** | Paginação adaptativa para 1.000 repositórios; exportação em CSV; validação + hipótese informal por RQ; primeiro snapshot de sprint; arquitetura e primeira versão do dashboard Streamlit; comparador individual vs. população | Felipe Pereira, Arthur Panzera, Gabriel Reis | #19 #20 #21 #22 #23 #24 #25 #29 #30 #31 |
-| **Lab01S03** | Análise e gráficos por RQ (RQ01/02, RQ03/04, RQ05/06, RQ07); segundo snapshot de sprint; inovações (correlação entre métricas, índice composto) | Felipe Pereira, Arthur Panzera, Gabriel Reis | #33 #34 #43 #44 #45 #46 #47 |
-| **Relatório Final** | Elaboração do documento final (metodologia, resultados por RQ, discussão, configuração do processo, revisão) | Felipe Pereira, Arthur Panzera, Gabriel Reis | #49 #50 #51 #52 #53 #54 |
+| **Lab01S01** | Arquitetura base do client GraphQL (#8); integração do script único de consulta (#7); coleta RQ05 - linguagem primária e comparação com ranking (#5) | Felipe Pereira | #5 #7 #8 |
+| **Lab01S01** | Coleta RQ01 - idade e maturidade (#1); coleta RQ02 - volume de contribuição externa (#2); coleta RQ06 - percentual de issues fechadas (#6) | Arthur Panzera | #1 #2 #6 |
+| **Lab01S01** | Coleta RQ03 - frequência de releases (#3); coleta RQ04 - frequência de atualização (#4); padronização e organização da estrutura de código (#15) | Gabriel Reis | #3 #4 #15 |
+| **Lab01S02** | Paginação da consulta para 1.000 repositórios (#19); validação + hipótese informal RQ01/RQ02 (#21); comparador de repositório individual vs. população (#31) | Felipe Pereira | #19 #21 #31 |
+| **Lab01S02** | Exportação de dados em CSV (#20); validação + hipótese informal RQ03/RQ04 (#22); primeiro snapshot de fechamento de sprint (#25); arquitetura do dashboard Streamlit (#29) | Arthur Panzera | #20 #22 #25 #29 |
+| **Lab01S02** | Validação + hipótese informal RQ05/RQ06 (#23); rascunho do relatório - introdução e hipóteses informais (#24); dashboard exploratório dos 1.000 repositórios (#30) | Gabriel Reis | #23 #24 #30 |
+| **Lab01S03** | Análise de correlação entre as métricas (#33); análise e gráficos RQ01/RQ02 (#43); otimização do script de paginação (#63); amostragem por faixa de stars - bypass do limite de 1.000 (#64) | Felipe Pereira | #33 #43 #63 #64 |
+| **Lab01S03** | Análise e gráficos RQ05/RQ06 (#45); cruzamento por linguagem RQ07 (#46); segundo snapshot de fechamento de sprint (#47) | Arthur Panzera | #45 #46 #47 |
+| **Lab01S03** | Índice composto de saúde/maturidade do repositório (#34); análise e gráficos RQ03/RQ04 (#44) | Gabriel Reis | #34 #44 |
+| **Relatório Final** | Relatório final - guarda-chuva (#49); metodologia de coleta (#50); revisão final (#54) | Felipe Pereira | #49 #50 #54 |
+| **Relatório Final** | Relatório final - guarda-chuva (#49); discussão hipótese vs. resultado (#52) | Arthur Panzera | #49 #52 |
+| **Relatório Final** | Relatório final - guarda-chuva (#49); resultados por RQ (#51); seção de introdução (#53) | Gabriel Reis | #49 #51 #53 |
 
 #### Configuração do processo
 
-- **Colunas do board:** `[confirmar - mínimo Backlog → To Do → Doing → Review → Done]`
+- **Colunas do board:** Backlog → To Do → Doing → Review → Done
 - **Limite de WIP (coluna Doing):** 3 - uma Issue por integrante do trio, controlando o fluxo de Doing para Review (ver justificativa completa em 3.2)
 - **Print do board:** `[inserir captura de tela do board ao final do Lab01, mostrando o fluxo real de trabalho]`
 
@@ -311,9 +317,18 @@ Na escala real da coleta oficial (N=1.000), a adaptativa é só ~4% mais lenta q
 
 ## 5. Conclusão
 
-*ORIENTAÇÃO: Sintetize, em poucos parágrafos, as respostas a todas as RQs (enunciado + inovação do grupo), sem repetir números já discutidos em detalhe — o objetivo aqui é a mensagem final, não os dados brutos. Aponte as principais limitações do estudo (tamanho de amostra, ameaças à validade não mitigadas, período de coleta). Quando o enunciado pedir explicitamente uma postura de consultoria (caso do Lab05, que pede recomendações de melhoria de processo "como se o grupo fosse consultoria para um time real"), inclua recomendações objetivas e acionáveis, não genéricas. Encerre indicando o que o grupo faria diferente com mais tempo ou recursos, e quais das inovações propostas (30%) valeriam a pena expandir em um trabalho futuro.*
+Das sete RQs, cinco confirmam a percepção que motivou o estudo (RQ01, RQ02, RQ04, RQ06, RQ07): repositórios populares tendem a ser antigos, receber contribuição externa relevante, ser atualizados com frequência e ter a maioria das issues fechadas, e linguagens populares se saem melhor nessas frentes. A RQ03 é a exceção mais clara, quase um terço da amostra nunca lança nenhuma release, contrariando a ideia de que popularidade implica ciclo de versionamento formal. Já a RQ05 confirma só em parte: Python/TypeScript/JavaScript dominam como esperado, mas Java e C# ficam abaixo do previsto pelo Octoverse, sugerindo que popularidade por estrelas favorece scripting/web/IA mais que software corporativo.
 
-*[conteúdo do grupo — substituir este texto]*
+As inovações aprofundam essa leitura: a correlação entre métricas mostra que nenhuma é redundante, o que sustenta o índice de saúde/maturidade, que por sua vez isola um perfil específico de baixo score (pesquisa de IA sem manutenção) que nenhuma métrica isolada capturaria. Já a paginação adaptativa depende da população, perde para a estratégia fixa no topo do ranking, mas vence de forma consistente abaixo de ~500 estrelas.
+
+**Limitações.** Ficaram três lacunas nos próprios testes feitos pelo grupo, não só nos dados coletados:
+
+- **Benchmark de paginação pouco confirmado.** A comparação principal (seção 4.6) rodou com apenas 2 execuções por cenário, o suficiente pra apontar a direção do ganho, não pra garantir sua magnitude exata.
+- **Mapeamento por faixa de estrelas incompleto.** O teste que comparou adaptativa vs. fixa por popularidade (4.6) só desceu até ~250 estrelas de teto, abaixo disso a densidade de repositórios não permite particionar com segurança, então não se sabe onde exatamente o "degrau" da adaptativa deixa de valer.
+
+Fora dos testes internos, a amostra em si também tem limites conhecidos: 980 de 1.000 repositórios-alvo, ausência de 8,5%/4,3% em RQ05/RQ06 não testada quanto a viés, e um retrato de instante único (23/08/2026) que não se repete em valores absolutos.
+
+Com mais tempo, o grupo repetiria a coleta em múltiplos instantes ao longo do semestre, aumentaria o número de execuções do benchmark de paginação e estenderia o teste por faixa de estrelas para baixo do teto de 250. Das inovações, a que mais vale expandir é o índice composto de saúde/maturidade: validá-lo contra um critério externo de qualidade (não só estrelas) daria a ele valor preditivo além do descritivo.
 
 ## 5. Referências
 
