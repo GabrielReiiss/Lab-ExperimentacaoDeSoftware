@@ -57,9 +57,11 @@ A caracterização é guiada por sete questões de pesquisa do enunciado, RQ01 a
 
 ## 2. Contexto
 
-*ORIENTAÇÃO: Situe o leitor no cenário do estudo. Primeiro, o contexto acadêmico: em qual momento do semestre este laboratório se encontra e como ele se conecta aos anteriores (ex.: "este é o Lab04, que consome os dados de mineração do Lab03 e os snapshots do Kanban mantidos desde o Lab01"). Segundo, o contexto do objeto de estudo em si: o que exatamente está sendo medido (os 1.000 repositórios mais populares do GitHub — Lab01; o processo de resolução de katas com e sem IA — Lab02; repositórios com CI/CD via GitHub Actions — Lab03; o board Kanban do próprio grupo — Lab04/Lab05). Cite aqui referências conceituais relevantes usadas como base teórica (ex.: o livro Accelerate, de Forsgren, Humble & Kim, para métricas DORA; o método GQM de Basili, Caldiera & Rombach para o meta-laboratório; o índice usado para "linguagens mais populares" no Lab01 — TIOBE, GitHut ou GitHub Octoverse, mantendo a mesma fonte do início ao fim).*
+O grupo cursa o 6º período de Engenharia de Software na PUC Minas. Este é o **Lab01** da disciplina Laboratório de Experimentação de Software, o primeiro do semestre. Neste laboratório o grupo coleta dados dos 1.000 repositórios mais populares do GitHub via API GraphQL própria e configura o board Kanban no GitHub Projects (v2), com colunas e política de WIP detalhadas na seção 3.3, que acompanha o grupo até o final do semestre.
 
-*[conteúdo do grupo — substituir este texto]*
+O objeto de estudo são os 1.000 repositórios open-source mais populares do GitHub, medidos por número de estrelas, com o critério de amostragem detalhado na seção 3.2. A caracterização parte da ideia de que popularidade observável em estrelas costuma ser tratada como indício de maturidade e qualidade de um projeto. As sete RQs testam essa suposição por ângulos diferentes (idade, contribuição externa, cadência de release, atualização, linguagem, resolução de issues, e o cruzamento entre elas por linguagem), em vez de simplesmente assumir que ela é verdadeira.
+
+Para a RQ05 e a RQ07, que dependem de uma definição externa do que conta como "linguagem mais popular", o grupo adota o **GitHub Octoverse 2025** como fonte de referência (hipótese detalhada na seção 1), em vez do TIOBE Index ou do GitHut, por ser a fonte com dados coletados diretamente da própria plataforma de onde a amostra do laboratório também é extraída. Essa mesma fonte é mantida do início ao fim, em qualquer comparação com "linguagens mais populares" ao longo do documento.
 
 ## 3. Metodologia
 
@@ -112,7 +114,19 @@ A caracterização é guiada por sete questões de pesquisa do enunciado, RQ01 a
 
 - **Colunas do board:** Backlog → To Do → Doing → Review → Done
 - **Limite de WIP (coluna Doing):** 3 - uma Issue por integrante do trio, controlando o fluxo de Doing para Review (ver justificativa completa em 3.2)
-- **Print do board:** `[inserir captura de tela do board ao final do Lab01, mostrando o fluxo real de trabalho]`
+- **Print do board ao final do Lab01:**
+
+![Board do GitHub Projects ao final do Lab01](data/Prints/board_final.png)
+
+O fluxo real de trabalho do grupo, sprint a sprint, pode ser melhor visualizado na tela "Snapshots de Sprint" do próprio dashboard, que lê os arquivos de snapshot direto de `data/snapshots/` e mostra a contagem de itens por status em cada sprint:
+
+**S02** (22 itens no board no momento do snapshot):
+
+![Snapshot da sprint S02](data/Prints/snapshot_s02.png)
+
+**S03** (34 itens no board, todos concluídos):
+
+![Snapshot da sprint S03](data/Prints/snapshot_s03.png)
 
 ### 3.4 Ferramentas
 

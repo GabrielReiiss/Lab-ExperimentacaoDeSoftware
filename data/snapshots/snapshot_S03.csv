@@ -1,0 +1,35 @@
+sprint,data_snapshot,issue_number,titulo,status,assignees,url
+S03,2026-08-26,47,Snapshot de fechamento da sprint S03,Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/47
+S03,2026-08-26,49,Relatório Final,Done,ArthurPanzera13;GabrielReiiss;felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/49
+S03,2026-08-26,54,Relatório: revisão final,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/54
+S03,2026-08-26,53,Relatório: seção de introdução,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/53
+S03,2026-08-26,64,Amostragem por faixa de stars (bypass do limite de 1.000 resultados),Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/64
+S03,2026-08-26,43,[RQ01 e RQ02] - Análise e gráficos: maturidade e contribuição externa,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/43
+S03,2026-08-26,63,Otimização do script de paginação,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/63
+S03,2026-08-26,50,Relatório: metodologia de coleta,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/50
+S03,2026-08-26,33,Análise de correlação entre as métricas,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/33
+S03,2026-08-26,52,Relatório: discussão hipótese vs. resultado,Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/52
+S03,2026-08-26,46,"[RQ07] - Cruzamento por linguagem: contribuição, releases e atualização",Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/46
+S03,2026-08-26,45,[RQ05 e RQ06] - Análise e gráficos: linguagem e issues fechadas,Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/45
+S03,2026-08-26,6,[RQ06] - Coleta: percentual de issues fechadas,Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/6
+S03,2026-08-26,25,Primeiro snapshot de fechamento de sprint,Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/25
+S03,2026-08-26,2,[RQ02] - Coleta: volume de contribuição externa,Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/2
+S03,2026-08-26,29,Arquitetura do dashboard Streamlit (estrutura de páginas e carregamento de dados),Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/29
+S03,2026-08-26,22,[RQ03 e RQ04] - Validação + hipótese informal,Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/22
+S03,2026-08-26,1,[RQ01] - Coleta: idade e maturidade dos repositórios,Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/1
+S03,2026-08-26,20,Exportação de dados em .csv,Done,ArthurPanzera13,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/20
+S03,2026-08-26,31,Comparador de repositório individual vs. população,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/31
+S03,2026-08-26,8,Definição da arquitetura base do cliente GraphQL,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/8
+S03,2026-08-26,19,Paginação da consulta para 1000 repositórios,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/19
+S03,2026-08-26,5,[RQ05] - Coleta: linguagem primária e comparação com ranking de mercado,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/5
+S03,2026-08-26,7,Integração do script único de consulta,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/7
+S03,2026-08-26,21,[RQ01 e RQ02] - Validação + hipótese informal,Done,felipeaps46,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/21
+S03,2026-08-26,15,Padronização e organização da estrutura do código,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/15
+S03,2026-08-26,3,[RQ03] - Coleta: frequência de releases,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/3
+S03,2026-08-26,4,[RQ04] - Coleta: frequência de atualização,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/4
+S03,2026-08-26,23,[RQ05 e RQ06] - Validação + hipótese informal,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/23
+S03,2026-08-26,30,Dashboard exploratório dos 1000 repositórios,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/30
+S03,2026-08-26,24,Rascunho do relatório: introdução e hipóteses informais,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/24
+S03,2026-08-26,44,[RQ03 e RQ04] - Análise e gráficos: releases e atualização,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/44
+S03,2026-08-26,51,Relatório: resultados por RQ,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/51
+S03,2026-08-26,34,Índice composto de saúde/maturidade do repositório,Done,GabrielReiiss,https://github.com/GabrielReiiss/Lab-ExperimentacaoDeSoftware/issues/34
